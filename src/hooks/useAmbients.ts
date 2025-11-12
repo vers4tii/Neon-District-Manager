@@ -3,7 +3,9 @@ import { useEffect } from "react";
 
 export function useAmbient() {
   useEffect(() => {
-    const hum = new Tone.NoiseSynth({noise: { type: "brown" }}).toDestination();
+    const hum = new Tone.NoiseSynth({
+      noise: { type: "brown" }
+    }).toDestination();
     const reverb = new Tone.Reverb(8).toDestination();
 
     hum.connect(reverb);
