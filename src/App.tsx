@@ -1,10 +1,13 @@
 import Dashboard from "./components/Dashboard";
 import EventFeed from "./components/EventFeed";
 import PolicyPanel from "./components/PolicyPanel";
+import GameOver from "./components/GameOver";
 import { useAmbient } from "./hooks/useAmbients";
+import { useCityStore } from "./store/cityStore";
 
 export default function App() {
   useAmbient();
+  const isGameOver = useCityStore((state) => state.isGameOver);
 
   return (
     <div className="min-h-screen p-6 relative">
@@ -19,9 +22,15 @@ export default function App() {
           NEON DISTRICT MANAGER
         </h1>
         
-        <Dashboard />
-        <EventFeed />
-        <PolicyPanel />
+        {isGameOver ? (
+          <GameOver />
+        ) : (
+          <>
+            <Dashboard />
+            <EventFeed />
+            <PolicyPanel />
+          </>
+        )}
 
         {/* Corner decorations */}
         <div className="fixed top-4 left-4 w-16 h-16 border-t-2 border-l-2 border-energy opacity-50" />
