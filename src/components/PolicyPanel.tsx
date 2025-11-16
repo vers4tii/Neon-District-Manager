@@ -5,7 +5,7 @@ import { useSoundEffects } from "../hooks/useAmbients";
 import { Coins, Zap, Play, Volume2, VolumeX } from "lucide-react";
 import * as Tone from "tone";
 
-export default function PolicyPanel() {
+export default function PolicyPanel({ compact = false }: { compact?: boolean }) {
   const { budget, energy, spendBudget, spendEnergy } = useCityStore();
   const { playClick, playSuccess, playError } = useSoundEffects();
   const [audioEnabled, setAudioEnabled] = React.useState(true);
@@ -13,7 +13,7 @@ export default function PolicyPanel() {
   const toggleAudio = () => {
     const newState = !audioEnabled;
     setAudioEnabled(newState);
-    Tone.Destination.mute = !newState;
+    Tone.getDestination().mute = !newState;
   };
 
   const handleInvest = () => {
@@ -41,6 +41,38 @@ export default function PolicyPanel() {
     simulateEvent();
   };
 
+  if (compact) {
+    return (
+      <div className="flex gap-4 flex-wrap justify-center">
+        <button
+          className="btn-neon flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleInvest}
+          disabled={budget < 50}
+          title={budget < 50 ? "Insufficient budget" : "Invest $50 to improve district"}
+        >
+          <Coins size={20} />
+          <span>INVEST</span>
+        </button>
+        <button
+          className="btn-neon flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleUseEnergy}
+          disabled={energy < 20}
+          title={energy < 20 ? "Insufficient energy" : "Use 20 energy for operations"}
+        >
+          <Zap size={20} />
+          <span>ENERGY</span>
+        </button>
+        <button
+          className="btn-neon flex items-center gap-2"
+          onClick={handleNextTurn}
+          title="Advance to next turn"
+        >
+          <Play size={20} />
+          <span>SKIP TURN</span>
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="bg-building p-6 rounded-lg">
       <div className="flex justify-between items-center mb-4">
@@ -53,7 +85,6 @@ export default function PolicyPanel() {
           {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
         </button>
       </div>
-      
       <div className="flex gap-4 flex-wrap">
         <button
           className="btn-neon flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -65,7 +96,6 @@ export default function PolicyPanel() {
           <span>INVEST BUDGET</span>
           <span className="text-xs opacity-70">($50)</span>
         </button>
-        
         <button
           className="btn-neon flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleUseEnergy}
@@ -76,7 +106,6 @@ export default function PolicyPanel() {
           <span>USE ENERGY</span>
           <span className="text-xs opacity-70">(20)</span>
         </button>
-        
         <button
           className="btn-neon flex items-center gap-2"
           onClick={handleNextTurn}
@@ -86,7 +115,6 @@ export default function PolicyPanel() {
           <span>NEXT TURN</span>
         </button>
       </div>
-
       <div className="mt-4 text-xs text-energy opacity-70">
         <p>💡 TIP: You lose when BOTH energy AND budget reach zero!</p>
       </div>

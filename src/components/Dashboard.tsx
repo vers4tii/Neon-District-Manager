@@ -2,14 +2,15 @@ import { useEffect, useRef } from "react";
 import { useCityStore } from "../store/cityStore";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from "chart.js";
-import { TrendingUp, Zap, DollarSign } from "lucide-react";
+import { TrendingUp, Zap, DollarSign, Smile } from "lucide-react";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export default function Dashboard() {
-  const { population, energy, budget } = useCityStore();
+  const { population, energy, budget, happiness = 0 } = useCityStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Particle background effect
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -52,6 +53,7 @@ export default function Dashboard() {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
 
+        // Draw connections
         particles.slice(i + 1).forEach(p2 => {
           const dx = p.x - p2.x;
           const dy = p.y - p2.y;
@@ -159,6 +161,12 @@ export default function Dashboard() {
     }
   };
 
+  const getHappinessColor = () => {
+    if (happiness >= 70) return "text-energy";
+    if (happiness >= 40) return "text-neon";
+    return "text-[#ff2e63]";
+  };
+
   return (
     <div className="bg-building p-6 rounded-lg mb-6 relative">
       <canvas 
@@ -170,7 +178,7 @@ export default function Dashboard() {
       <div className="relative z-10">
         <h2 className="text-neon mb-4 text-2xl font-bold">CITY STATS TERMINAL</h2>
         
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="stat-card">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="text-energy" size={24} />
@@ -184,7 +192,7 @@ export default function Dashboard() {
               <Zap className="text-neon" size={24} />
               <span className="text-neon text-sm font-bold">ENERGY</span>
             </div>
-            <div className="text-3xl font-bold text-neon">{energy}%</div>
+            <div className="text-3xl font-bold text-neon">{energy}</div>
           </div>
           
           <div className="stat-card">
@@ -193,6 +201,14 @@ export default function Dashboard() {
               <span className="text-[#ff2e63] text-sm font-bold">BUDGET</span>
             </div>
             <div className="text-3xl font-bold text-[#ff2e63]">${budget.toLocaleString()}</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="flex items-center gap-2 mb-2">
+              <Smile className={getHappinessColor()} size={24} />
+              <span className={`${getHappinessColor()} text-sm font-bold`}>HAPPINESS</span>
+            </div>
+            <div className={`text-3xl font-bold ${getHappinessColor()}`}>{happiness}%</div>
           </div>
         </div>
 

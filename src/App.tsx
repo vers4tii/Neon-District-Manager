@@ -1,6 +1,9 @@
 import Dashboard from "./components/Dashboard";
 import EventFeed from "./components/EventFeed";
+import BuildingsPanel from "./components/BuildingsPanel";
+import UpgradesPanel from "./components/UpgradesPanel";
 import PolicyPanel from "./components/PolicyPanel";
+// Removed duplicate import
 import GameOver from "./components/GameOver";
 import { useAmbient } from "./hooks/useAmbients";
 import { useCityStore } from "./store/cityStore";
@@ -26,9 +29,20 @@ export default function App() {
           <GameOver />
         ) : (
           <>
-            <Dashboard />
-            <EventFeed />
-            <PolicyPanel />
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <Dashboard />
+                <EventFeed />
+              </div>
+              <div className="w-full md:w-80 flex-shrink-0 flex flex-col gap-6">
+                <BuildingsPanel />
+                <UpgradesPanel />
+              </div>
+            </div>
+            {/* Sticky action bar for PolicyPanel */}
+            <div className="fixed bottom-0 left-0 w-full z-50 bg-building/90 backdrop-blur border-t border-neon shadow-lg flex justify-center py-4">
+              <PolicyPanel compact />
+            </div>
           </>
         )}
 
