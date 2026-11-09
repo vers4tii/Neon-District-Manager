@@ -1,30 +1,39 @@
-import { useCityStore } from "../store/cityStore";
+import { useState, type ReactNode } from "react";
+import { getUpgradeCost, upgradeCatalog, useCityStore } from "../store/cityStore";
 import { useSoundEffects } from "../hooks/useAmbients";
-import { TrendingUp, Zap, Recycle, Bot, Leaf, Heart, GraduationCap, Bus, Grid3x3, DollarSign } from "lucide-react";
+import {
+  TrendingUp,
+  Zap,
+  Recycle,
+  Bot,
+  Leaf,
+  Heart,
+  GraduationCap,
+  Bus,
+  Grid3x3,
+  DollarSign,
+} from "lucide-react";
 
 export default function UpgradesPanel() {
-  const { upgrades, budget, buyUpgrade } = useCityStore();
+  const { upgrades, budget, actionsLeft, buyUpgrade } = useCityStore();
   const { playSuccess, playError } = useSoundEffects();
-  type UpgradeItem = {
-    id: string;
-    name: string;
-    cost: number;
-    owned: boolean;
-    repeatable?: boolean;
-    level?: number;
-    description: string;
-  };
-  const upgradesArray: UpgradeItem[] = Array.isArray(upgrades)
-    ? (upgrades as UpgradeItem[])
-    : (Object.values(upgrades) as unknown as UpgradeItem[]);
+  const [filter, setFilter] = useState<"all" | "owned" | "affordable">("all");
 
-  const handleBuyUpgrade = (upgradeId: string, cost: number, owned: boolean, repeatable?: boolean) => {
+  const upgradeCostFor = (upgradeId: string) =>
+    getUpgradeCost(upgradeId, upgrades.efficiency);
+
+  const handleBuyUpgrade = (
+    upgradeId: string,
+    cost: number,
+    owned: boolean,
+    repeatable?: boolean,
+  ) => {
     if (owned && !repeatable) {
       playError();
       return;
     }
-    
-    if (budget >= cost) {
+
+    if (actionsLeft > 0 && budget >= cost) {
       playSuccess();
       buyUpgrade(upgradeId);
     } else {
@@ -33,7 +42,7 @@ export default function UpgradesPanel() {
   };
 
   const getIcon = (id: string) => {
-    const icons: Record<string, any> = {
+    const icons: Record<string, ReactNode> = {
       efficiency: <TrendingUp size={24} />,
       solar: <Zap size={24} />,
       recycling: <Recycle size={24} />,
@@ -43,65 +52,128 @@ export default function UpgradesPanel() {
       education: <GraduationCap size={24} />,
       public_transport: <Bus size={24} />,
       smart_grid: <Grid3x3 size={24} />,
-      tax_reform: <DollarSign size={24} />
+      tax_reform: <DollarSign size={24} />,
     };
     return icons[id] || <TrendingUp size={24} />;
   };
 
+  const filteredUpgrades = upgradeCatalog.filter((upgrade) => {
+    const currentLevel =
+      upgrade.id === "efficiency"
+        ? upgrades.efficiency
+        : Number(Boolean((upgrades as Record<string, unknown>)[upgrade.id]));
+    const isOwned = upgrade.repeatable
+      ? currentLevel > 0
+      : Boolean((upgrades as Record<string, unknown>)[upgrade.id]);
+    const isMaxed = !upgrade.repeatable && isOwned;
+    const upgradeCost = upgradeCostFor(upgrade.id);
+
+    if (filter === "owned") return isOwned;
+    if (filter === "affordable") return !isMaxed && budget >= upgradeCost;
+    return true;
+  });
+
   return (
-    <div className="bg-building p-6 rounded-lg mb-6">
-      <h2 className="text-neon text-xl font-bold mb-4">RESEARCH UPGRADES</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {upgradesArray.map((upgrade: {
-          id: string;
-          name: string;
-          cost: number;
-          owned: boolean;
-          repeatable?: boolean;
-          level?: number;
-          description: string;
-        }) => {
-          const canAfford = budget >= upgrade.cost;
-          const isOwned = upgrade.owned;
-          const isRepeatable = upgrade.repeatable;
-          
+    <div className="bg-building p-4 rounded-lg mb-4 flex flex-col max-h-[42vh] overflow-hidden">
+      <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
+        <h2 className="text-neon text-xl font-bold">RESEARCH UPGRADES</h2>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-2.5 py-1 rounded text-xs ${filter === "all" ? "bg-neon text-bg" : "text-energy border border-energy"}`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter("owned")}
+            className={`px-2.5 py-1 rounded text-xs ${filter === "owned" ? "bg-neon text-bg" : "text-energy border border-energy"}`}
+          >
+            Owned
+          </button>
+          <button
+            onClick={() => setFilter("affordable")}
+            className={`px-2.5 py-1 rounded text-xs ${filter === "affordable" ? "bg-neon text-bg" : "text-energy border border-energy"}`}
+          >
+            Affordable
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2.5 overflow-y-auto pr-1 min-h-0 content-start auto-rows-max">
+        {filteredUpgrades.map((upgrade) => {
+          const currentLevel =
+            upgrade.id === "efficiency"
+              ? upgrades.efficiency
+              : Number(
+                  Boolean((upgrades as Record<string, unknown>)[upgrade.id]),
+                );
+          const isOwned = upgrade.repeatable
+            ? currentLevel > 0
+            : Boolean((upgrades as Record<string, unknown>)[upgrade.id]);
+          const upgradeCost = upgradeCostFor(upgrade.id);
+          const isMaxed = isOwned && !upgrade.repeatable;
+          const canAfford =
+            !isMaxed && actionsLeft > 0 && budget >= upgradeCost;
+          const affordabilityClass = isMaxed
+            ? ""
+            : canAfford
+              ? "afford-available"
+              : "afford-unavailable";
+
           return (
-            <div 
-              key={upgrade.id} 
-              className={`stat-card p-4 ${!canAfford ? "opacity-60" : ""} ${isOwned && !isRepeatable ? "border-energy" : ""}`}
+            <div
+              key={upgrade.id}
+              className={`stat-card p-3 ${affordabilityClass} ${isOwned && !upgrade.repeatable ? "border-energy" : ""}`}
             >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className={`${isOwned ? "text-energy" : "text-energy opacity-50"}`}>
+              <div className="flex items-start justify-between mb-2 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className={`${isOwned ? "text-energy" : "text-energy opacity-50"}`}
+                  >
                     {getIcon(upgrade.id)}
                   </div>
-                  <div>
-                    <h3 className="text-energy font-bold text-sm">{upgrade.name}</h3>
-                    <p className="text-xs text-energy opacity-70">
-                      {isRepeatable 
-                        ? `Level ${upgrade.level || 0}` 
-                        : isOwned ? "✓ Owned" : "Not owned"
-                      }
+                  <div className="min-w-0">
+                    <h3 className="text-energy font-bold text-sm leading-tight">
+                      {upgrade.name}
+                    </h3>
+                    <p className="text-[11px] text-energy opacity-70">
+                      {upgrade.repeatable
+                        ? `Level ${currentLevel}`
+                        : isOwned
+                          ? "✓ Owned"
+                          : "Not owned"}
                     </p>
                   </div>
                 </div>
-                
+
                 <button
-                  onClick={() => handleBuyUpgrade(upgrade.id, upgrade.cost, isOwned, isRepeatable)}
-                  disabled={!canAfford || (isOwned && !isRepeatable)}
-                  className="btn-neon text-xs px-3 py-1 disabled:opacity-30"
-                  title={isOwned && !isRepeatable ? "Already owned" : `Purchase for $${upgrade.cost}`}
+                  onClick={() =>
+                    handleBuyUpgrade(
+                      upgrade.id,
+                      upgradeCost,
+                      isOwned,
+                      upgrade.repeatable,
+                    )
+                  }
+                  disabled={!canAfford}
+                  className={`btn-neon text-[10px] px-2.5 py-1 disabled:cursor-not-allowed ${isMaxed ? "opacity-60" : canAfford ? "afford-available" : "afford-unavailable disabled:opacity-100"}`}
+                  title={
+                    isOwned && !upgrade.repeatable
+                      ? "Already owned"
+                      : `Purchase for $${upgradeCost}`
+                  }
                 >
-                  ${upgrade.cost}
+                  {isMaxed ? "OWNED" : `$${upgradeCost}`}
                 </button>
               </div>
-              
-              <p className="text-xs text-energy opacity-80 mb-2">{upgrade.description}</p>
-              
-              {isRepeatable && (
-                <div className="text-xs text-neon">
-                  ⭐ Repeatable upgrade
-                </div>
+
+              <p className="text-[11px] text-energy opacity-80 mb-2 leading-snug">
+                {upgrade.description}
+              </p>
+
+              {upgrade.repeatable && (
+                <div className="text-[10px] text-neon">⭐ Repeatable</div>
               )}
             </div>
           );

@@ -18,18 +18,22 @@ export default function EventFeed() {
         <Terminal className="text-energy" size={24} />
         <h2 className="text-neon text-xl font-bold">EVENT LOG</h2>
       </div>
-      
-      <div 
+
+      <div
         ref={scrollRef}
-        className="event-terminal p-4 rounded h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-energy scrollbar-track-bg"
+        className="event-terminal p-3 rounded h-28 overflow-y-auto scrollbar-thin scrollbar-thumb-energy scrollbar-track-bg"
       >
         {events.length === 0 ? (
-          <div className="text-energy opacity-50">Awaiting system events...</div>
+          <div className="text-energy opacity-50">
+            Awaiting system events...
+          </div>
         ) : (
           <ul>
             {events.slice(-15).map((e, i) => (
               <li key={i} className="event-item text-energy text-sm">
-                <span className="text-neon mr-2">[{new Date().toLocaleTimeString()}]</span>
+                <span className="text-neon mr-2">
+                  [{new Date().toLocaleTimeString()}]
+                </span>
                 {e}
               </li>
             ))}

@@ -1,18 +1,37 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useCityStore } from "../store/cityStore";
 import { useSoundEffects } from "../hooks/useAmbients";
-import { Building, Factory, Zap, FlaskConical, TreePine, Hospital, Shield, ShoppingCart, Wind, GraduationCap, Trash2 } from "lucide-react";
+import {
+  Building,
+  Factory,
+  Zap,
+  FlaskConical,
+  TreePine,
+  Hospital,
+  Shield,
+  ShoppingCart,
+  Wind,
+  GraduationCap,
+  Trash2,
+} from "lucide-react";
 
 export default function BuildingsPanel() {
-  const { buildings, budget, energy, buyBuilding, demolishBuilding } = useCityStore();
+  const { buildings, budget, energy, actionsLeft, buyBuilding, demolishBuilding } =
+    useCityStore();
   const { playSuccess, playError } = useSoundEffects();
   const [filter, setFilter] = useState<"all" | "owned" | "affordable">("all");
 
   const handleBuyBuilding = (buildingId: string) => {
-    const building = buildings.find(b => b.id === buildingId);
+    const building = buildings.find((b) => b.id === buildingId);
     if (!building) return;
-    
-    if (budget >= building.cost && energy >= building.energyCost) {
+
+    const atMax = !!(building.maxOwned && building.owned >= building.maxOwned);
+    if (
+      actionsLeft > 0 &&
+      !atMax &&
+      budget >= building.cost &&
+      energy >= building.energyCost
+    ) {
       playSuccess();
       buyBuilding(buildingId);
     } else {
@@ -21,12 +40,16 @@ export default function BuildingsPanel() {
   };
 
   const handleDemolish = (buildingId: string) => {
+    if (actionsLeft <= 0) {
+      playError();
+      return;
+    }
     playError();
     demolishBuilding(buildingId);
   };
 
   const getIcon = (id: string) => {
-    const icons: Record<string, any> = {
+    const icons: Record<string, ReactNode> = {
       housing: <Building size={24} />,
       solar: <Zap size={24} />,
       factory: <Factory size={24} />,
@@ -36,22 +59,26 @@ export default function BuildingsPanel() {
       police: <Shield size={24} />,
       mall: <ShoppingCart size={24} />,
       wind: <Wind size={24} />,
-      university: <GraduationCap size={24} />
+      university: <GraduationCap size={24} />,
     };
     return icons[id] || <Building size={24} />;
   };
 
-  const filteredBuildings = buildings.filter(building => {
+  const filteredBuildings = buildings.filter((building) => {
+    const atMax = !!(building.maxOwned && building.owned >= building.maxOwned);
+
     if (filter === "owned") return building.owned > 0;
-    if (filter === "affordable") return budget >= building.cost && energy >= building.energyCost;
+    if (filter === "affordable") {
+      return !atMax && budget >= building.cost && energy >= building.energyCost;
+    }
     return true;
   });
 
   return (
-    <div className="bg-building p-6 rounded-lg mb-6">
-      <div className="flex justify-between items-center mb-4">
+    <div className="bg-building p-4 rounded-lg mb-4 flex flex-col max-h-[42vh] overflow-hidden">
+      <div className="flex justify-between items-center mb-3">
         <h2 className="text-neon text-xl font-bold">CONSTRUCT BUILDINGS</h2>
-        
+
         <div className="flex gap-2">
           <button
             onClick={() => setFilter("all")}
@@ -73,34 +100,54 @@ export default function BuildingsPanel() {
           </button>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filteredBuildings.map(building => {
-          const canAfford = budget >= building.cost && energy >= building.energyCost;
-          const atMax = !!(building.maxOwned && building.owned >= building.maxOwned);
-          
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3 overflow-y-auto pr-1 min-h-0 content-start auto-rows-max">
+        {filteredBuildings.map((building) => {
+          const atMax = !!(
+            building.maxOwned && building.owned >= building.maxOwned
+          );
+          const canAfford =
+            actionsLeft > 0 &&
+            !atMax &&
+            budget >= building.cost &&
+            energy >= building.energyCost;
+          const affordabilityClass = atMax ? "" : canAfford
+            ? "afford-available"
+            : "afford-unavailable";
+
           return (
-            <div key={building.id} className={`stat-card p-4 ${!canAfford ? "opacity-60" : ""} ${atMax ? "border-[#ff2e63]" : ""}`}>
+            <div
+              key={building.id}
+              className={`stat-card p-4 ${affordabilityClass} ${atMax ? "border-[#ff2e63]" : ""}`}
+            >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="text-energy">{getIcon(building.id)}</div>
                   <div>
-                    <h3 className="text-energy font-bold text-sm">{building.name}</h3>
+                    <h3 className="text-energy font-bold text-sm">
+                      {building.name}
+                    </h3>
                     <p className="text-xs text-energy opacity-70">
                       {building.owned > 0 ? `x${building.owned}` : "Not built"}
                       {building.maxOwned && ` / ${building.maxOwned}`}
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleBuyBuilding(building.id)}
                     disabled={!canAfford || atMax}
-                    className="btn-neon text-xs px-2 py-1 disabled:opacity-30"
-                    title={atMax ? "Maximum reached" : `Build ${building.name}`}
+                    className={`btn-neon text-xs px-2 py-1 disabled:cursor-not-allowed ${atMax ? "opacity-60" : canAfford ? "afford-available" : "afford-unavailable disabled:opacity-100"}`}
+                    title={
+                      atMax
+                        ? "Maximum reached"
+                        : actionsLeft <= 0
+                          ? "No actions left this turn"
+                          : `Build ${building.name}`
+                    }
                   >
-                    BUILD
+                    {atMax ? "MAX" : "BUILD"}
                   </button>
                   {building.owned > 0 && (
                     <button
@@ -113,17 +160,29 @@ export default function BuildingsPanel() {
                   )}
                 </div>
               </div>
-              
-              <p className="text-xs text-energy opacity-80 mb-2">{building.description}</p>
-              
+
+              <p className="text-xs text-energy opacity-80 mb-2">
+                {building.description}
+              </p>
+
               <div className="grid grid-cols-2 gap-1 text-xs text-energy">
                 <div className="flex items-center gap-1">
                   <span>💰</span>
-                  <span className={building.cost > budget ? "text-[#ff2e63]" : ""}>${building.cost}</span>
+                  <span
+                    className={building.cost > budget ? "text-[#ff2e63]" : ""}
+                  >
+                    ${building.cost}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span>⚡</span>
-                  <span className={building.energyCost > energy ? "text-[#ff2e63]" : ""}>{building.energyCost}</span>
+                  <span
+                    className={
+                      building.energyCost > energy ? "text-[#ff2e63]" : ""
+                    }
+                  >
+                    {building.energyCost}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span>👥</span>
@@ -131,24 +190,45 @@ export default function BuildingsPanel() {
                 </div>
                 <div className="flex items-center gap-1">
                   <span>😊</span>
-                  <span className={building.happinessBonus > 0 ? "text-energy" : "text-[#ff2e63]"}>
-                    {building.happinessBonus > 0 ? "+" : ""}{building.happinessBonus}
+                  <span
+                    className={
+                      building.happinessBonus >= 0
+                        ? "text-energy"
+                        : "text-[#ff2e63]"
+                    }
+                  >
+                    {building.happinessBonus > 0 ? "+" : ""}
+                    {building.happinessBonus}
                   </span>
                 </div>
               </div>
-              
+
               <div className="mt-2 pt-2 border-t border-energy/20 text-xs text-energy">
                 <div className="flex justify-between">
                   <span>Income/turn:</span>
-                  <span className={building.incomePerTurn >= 0 ? "text-energy" : "text-[#ff2e63]"}>
-                    ${building.incomePerTurn > 0 ? "+" : ""}{building.incomePerTurn}
+                  <span
+                    className={
+                      building.incomePerTurn >= 0
+                        ? "text-energy"
+                        : "text-[#ff2e63]"
+                    }
+                  >
+                    ${building.incomePerTurn > 0 ? "+" : ""}
+                    {building.incomePerTurn}
                   </span>
                 </div>
                 {building.energyPerTurn !== 0 && (
                   <div className="flex justify-between">
                     <span>Energy/turn:</span>
-                    <span className={building.energyPerTurn > 0 ? "text-energy" : "text-[#ff2e63]"}>
-                      {building.energyPerTurn > 0 ? "+" : ""}{building.energyPerTurn}
+                    <span
+                      className={
+                        building.energyPerTurn > 0
+                          ? "text-energy"
+                          : "text-[#ff2e63]"
+                      }
+                    >
+                      {building.energyPerTurn > 0 ? "+" : ""}
+                      {building.energyPerTurn}
                     </span>
                   </div>
                 )}

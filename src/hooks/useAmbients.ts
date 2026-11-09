@@ -1,23 +1,21 @@
 import * as Tone from "tone";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export function useAmbient() {
-  const [audioStarted, setAudioStarted] = useState(false);
+  const startedRef = useRef(false);
 
   useEffect(() => {
-    let isActive = true;
-    let synthObjects: any[] = [];
+    let active = true;
+    let synthObjects: Array<Tone.ToneAudioNode & { dispose?: () => void }> = [];
+    let arpPattern: Tone.Loop | null = null;
 
     const startAudio = async () => {
-      if (audioStarted) return;
-      
-      try {
-      await Tone.start();
-      setAudioStarted(true);
-      
-      if (!isActive) return;
+      if (startedRef.current || !active) return;
 
-      Tone.getDestination().volume.value = -20;
+      try {
+        await Tone.start();
+        if (!active) return;
+        startedRef.current = true;
 
         const drone = new Tone.FMSynth({
           harmonicity: 0.5,
@@ -26,9 +24,9 @@ export function useAmbient() {
             attack: 8,
             decay: 0,
             sustain: 1,
-            release: 8
+            release: 8,
           },
-          volume: -30
+          volume: -30,
         }).toDestination();
 
         const noise = new Tone.NoiseSynth({
@@ -37,22 +35,22 @@ export function useAmbient() {
             attack: 1,
             decay: 2,
             sustain: 0.3,
-            release: 4
+            release: 4,
           },
-          volume: -35
+          volume: -35,
         }).toDestination();
 
         const reverb = new Tone.Reverb({
           decay: 10,
           preDelay: 0.1,
-          wet: 0.3
+          wet: 0.3,
         }).toDestination();
 
         const autoFilter = new Tone.AutoFilter({
           frequency: 0.1,
           depth: 0.5,
           baseFrequency: 100,
-          wet: 0.5
+          wet: 0.5,
         }).toDestination();
 
         drone.connect(reverb);
@@ -62,9 +60,7 @@ export function useAmbient() {
         synthObjects = [drone, noise, reverb, autoFilter];
 
         autoFilter.start();
-        
         drone.triggerAttack("C1", "+0.1");
-        
         noise.triggerAttack("+0.2");
 
         const synth = new Tone.PolySynth(Tone.Synth, {
@@ -73,9 +69,9 @@ export function useAmbient() {
             attack: 0.5,
             decay: 1,
             sustain: 0.3,
-            release: 2
+            release: 2,
           },
-          volume: -35
+          volume: -35,
         }).toDestination();
 
         synth.connect(reverb);
@@ -84,39 +80,47 @@ export function useAmbient() {
         const notes = ["C4", "E4", "G4", "B4", "D5", "G4", "E4", "C4"];
         let noteIndex = 0;
 
-        const arpPattern = new Tone.Loop((time) => {
-          if (isActive) {
-            synth.triggerAttackRelease(notes[noteIndex % notes.length], "8n", time, 0.05);
-            noteIndex++;
+        arpPattern = new Tone.Loop((time) => {
+          if (active) {
+            synth.triggerAttackRelease(
+              notes[noteIndex % notes.length],
+              "8n",
+              time,
+              0.05,
+            );
+            noteIndex += 1;
           }
         }, "2n");
 
         arpPattern.start(0);
         Tone.getTransport().bpm.value = 40;
-        Tone.start();
+        Tone.getDestination().volume.value = -20;
+        Tone.getTransport().start();
       } catch (error) {
         console.error("Audio initialization failed:", error);
       }
     };
 
     const handleInteraction = () => {
-      startAudio();
-      document.removeEventListener('click', handleInteraction);
-      document.removeEventListener('keydown', handleInteraction);
+      void startAudio();
+      document.removeEventListener("pointerdown", handleInteraction);
+      document.removeEventListener("keydown", handleInteraction);
     };
 
-    document.addEventListener('click', handleInteraction, { once: true });
-    document.addEventListener('keydown', handleInteraction, { once: true });
+    document.addEventListener("pointerdown", handleInteraction, { once: true });
+    document.addEventListener("keydown", handleInteraction, { once: true });
 
     return () => {
-      isActive = false;
-      document.removeEventListener('click', handleInteraction);
-      document.removeEventListener('keydown', handleInteraction);
-      
+      active = false;
+      startedRef.current = false;
+      document.removeEventListener("pointerdown", handleInteraction);
+      document.removeEventListener("keydown", handleInteraction);
+
       try {
+        arpPattern?.dispose();
         Tone.getTransport().stop();
-        synthObjects.forEach(obj => {
-          if (obj && typeof obj.dispose === 'function') {
+        synthObjects.forEach((obj) => {
+          if (obj && typeof obj.dispose === "function") {
             obj.dispose();
           }
         });
@@ -124,7 +128,7 @@ export function useAmbient() {
         console.error("Audio cleanup failed:", error);
       }
     };
-  }, [audioStarted]);
+  }, []);
 }
 
 export function useSoundEffects() {
@@ -139,11 +143,11 @@ export function useSoundEffects() {
           attack: 0.001,
           decay: 0.4,
           sustain: 0.01,
-          release: 0.4
+          release: 0.4,
         },
-        volume: -25
+        volume: -25,
       }).toDestination();
-      
+
       synth.triggerAttackRelease("C2", "32n");
       setTimeout(() => synth.dispose(), 1000);
     } catch (error) {
@@ -160,16 +164,16 @@ export function useSoundEffects() {
           attack: 0.01,
           decay: 0.2,
           sustain: 0.1,
-          release: 0.3
+          release: 0.3,
         },
-        volume: -20
+        volume: -20,
       }).toDestination();
 
       synth.triggerAttackRelease("C5", "16n");
       setTimeout(() => {
         synth.triggerAttackRelease("E5", "16n");
       }, 50);
-      
+
       setTimeout(() => synth.dispose(), 1000);
     } catch (error) {
       console.error("Success sound failed:", error);
@@ -184,9 +188,9 @@ export function useSoundEffects() {
         envelope: {
           attack: 0.001,
           decay: 0.1,
-          sustain: 0
+          sustain: 0,
         },
-        volume: -25
+        volume: -25,
       }).toDestination();
 
       synth.triggerAttackRelease("32n");
