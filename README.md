@@ -1,237 +1,127 @@
 # 🌆 Neon District Manager
 
-A futuristic city management simulation game with a retro-neon aesthetic. Manage resources, construct buildings, research upgrades, and keep your district thriving in this immersive idle/strategy game.
+A turn-based city management game with a retro-neon look. Build a district, keep the lights on, keep your citizens happy, and survive as many turns as you can.
 
-## 🎮 Game Overview
+## 🎮 Gameplay
 
-You are the manager of a neon-lit district. Balance three critical resources:
-- **Population** - Your workforce and productivity
-- **Energy** - Power for buildings and city operations
-- **Budget** - Money to construct and upgrade
+You manage a district through four resources:
 
-Make strategic decisions to keep the district running before both energy and budget hit zero!
+| Resource       | Role                                                        |
+| -------------- | ----------------------------------------------------------- |
+| **Budget**     | Money to build and research. Can go into debt (down to -$200). |
+| **Energy**     | Powers your buildings. Capped at 200.                       |
+| **Population** | Grows toward your housing capacity. Counts toward the score. |
+| **Happiness**  | 0–100. Drives population growth and can end the game.       |
 
----
+### Turns and actions
 
-## ✅ Current Features
+Each turn you have **3 actions**. These actions use one each:
 
-### Core Gameplay
-- **Real-time Resource Management** - Monitor and manage population, energy, and budget simultaneously
-- **City Stats Terminal** - Beautiful dashboard with live stats and chart visualization
-- **Turn-Based Events** - Advance turns to trigger income, energy changes, and random events
-- **Random Event System** - 30% chance per turn for tech breakthroughs, tax revenue, crises, etc.
+- Build a building
+- Buy an upgrade
+- Demolish a building (refunds 50% of its cost)
+- **Invest** – spend $50 for +5 happiness
+- **Energy** – sell 20 energy for +$40
 
-### Buildings (4 Available)
-- **Residential Block** - Increases population, generates income
-- **Solar Farm** - Generates energy, no population bonus
-- **Factory** - High income production with energy consumption
-- **Research Lab** - Research opportunities with balanced stats
+When you are done (or out of actions), press **End Turn**. The turn then resolves:
 
-### Upgrades & Progression
-- **Efficiency Upgrade** - Incrementally improves income (repeatable)
-- **Solar Technology** - Permanently increases energy generation
-- **Recycling System** - Permanently increases budget income
-- **Automation Tech** - Placeholder for future automation features
+1. Buildings produce income and energy (multiplied by the Efficiency upgrade).
+2. Population drifts toward capacity, faster when happiness is high.
+3. Happiness changes depending on income, energy balance and buildings.
+4. With a 30% chance, a random event happens (tech breakthrough, tax revenue, immigration wave, power surge, market crash).
+5. Game over conditions are checked.
 
-### User Interface
-- **Sticky Action Bar** - Invest, Use Energy, and Skip Turn buttons always accessible
-- **Responsive Sidebar Layout** - Building and upgrade panels on the side (desktop), below on mobile
-- **Event Log Feed** - Real-time display of game events
-- **Neon Aesthetic** - Retro-cyberpunk visual design with animated effects
-- **Audio Controls** - Toggle background music and sound effects
+### Game over
 
-### Audio System
-- **Ambient Soundtrack** - Atmospheric drone and synthesizer background music
-- **Sound Effects** - Click, success, and error feedback sounds
-- **Audio Toggle** - Mute/unmute button in the UI
+The game ends when any of these happens:
 
-### Game State
-- **Persistent Save Data** - Game progress saved to localStorage
-- **High Score Tracking** - Records best score across sessions
-- **Game Over Screen** - Detailed end-game state with restart option
+- **Blackout** – energy stays at 0 for 3 turns in a row
+- **Revolt** – happiness reaches 0
+- **Bankruptcy** – budget drops below -$200
 
----
+### Score
 
-## 🚧 What's Currently Working
+Each turn adds `income (if positive) + population / 10 + happiness` to your score. The high score is saved in `localStorage`.
 
-✅ Resource management mechanics  
-✅ Building purchase and demolition  
-✅ Upgrade system with repeatable and one-time purchases  
-✅ Turn simulation with income/energy calculations  
-✅ Event log and UI responsiveness  
-✅ Audio system with ambient music and SFX  
-✅ Game over detection and state persistence  
-✅ Sticky action buttons for better UX  
-✅ Responsive dashboard layout  
+## 🏗️ Buildings
 
----
+| Building          | Cost | Energy cost | Capacity | Income/turn | Energy/turn | Happiness | Max |
+| ----------------- | ---- | ----------- | -------- | ----------- | ----------- | --------- | --- |
+| Residential Block | $100 | 10          | +50      | +5          | -2          | +1        | 12  |
+| Solar Farm        | $150 | 0           | –        | -5          | +15         | +1        | 10  |
+| Factory           | $200 | 20          | +20      | +30         | -10         | -2        | 8   |
+| Research Lab      | $300 | 15          | +10      | +10         | -5          | 0         | 6   |
+| Neon Park         | $120 | 5           | +20      | -3          | -1          | +2        | 8   |
 
-## ⚠️ Known Issues & Limitations
+Base population capacity is 1,000. Buildings add to it. The happiness effect of all buildings is applied every turn (capped at ±3 per turn).
 
-### Current Bugs/Issues
-- **Limited Building Variety** - Only 4 buildings available (more need implementation)
-- **Limited Upgrade Types** - 4 upgrade categories (could expand significantly)
-- **Basic Random Events** - Limited event variety (5 event types)
-- **No Disaster System** - No natural disasters or crisis events
-- **No Population Happiness Mechanics** - Happiness stat exists but isn't fully integrated
-- **No Pollution/Environment System** - No environmental consequences for building choices
+## 🔬 Upgrades
 
-### UI/UX Limitations
-- **Mobile Optimization** - Sidebar stacking could be improved on very small screens
-- **No Tutorial** - First-time players might be confused
-- **No Pausing** - Game always advances on turn skip
-- **No Building Descriptions** - Some building effects aren't clearly explained
-
-### Game Balance
-- **Difficulty Curve** - Game can be too easy with solar farms
-- **No Scaling** - Late-game can feel repetitive
-- **Income Imbalance** - Some buildings are overpowered compared to others
-- **Energy Cap** - Hard-coded at 200, may need adjustment
-
----
-
-## 🚀 Future Features (Planned)
-
-### Additional Buildings
-- **Hospital** - Improves happiness, increases budget costs
-- **Police Station** - Crime prevention system (future feature)
-- **Shopping Mall** - Generates luxury revenue
-- **Wind Turbine** - Alternative energy source
-- **University** - Education and research bonuses
-- **Park** - Happiness and population attraction
-- **Recycling Center** - Environmental benefits
-
-### Enhanced Game Mechanics
-- **Pollution System** - Buildings create pollution affecting happiness
-- **Crime System** - Population becomes unhappy with crime
-- **Disaster Events** - Random natural disasters/crises
-- **Trade Routes** - Export goods for additional income
-- **Population Needs** - Different demographics with unique demands
-- **District Zones** - Residential, commercial, industrial zones with adjacency bonuses
-
-### Upgrades & Research
-- **Tech Tree** - More structured upgrade progression
-- **Building Automation** - Reduce manual button presses
-- **Green Energy** - Special research path for eco-friendly buildings
-- **Population Controls** - Birth rate and immigration management
-- **Infrastructure** - Road networks and public transport
-
-### UI Enhancements
-- **Tutorial/Help System** - Guided introduction for new players
-- **Pause Feature** - Pause game without skipping turns
-- **Settings Menu** - Difficulty modes, visual preferences
-- **Statistics Dashboard** - Detailed analytics and graphs
-- **Achievements** - Milestone tracking system
-- **Leaderboard** - High score competition (multiplayer potential)
-
-### Content Additions
-- **Multiple Districts** - Manage several districts with shared resources
-- **NPC Characters** - Citizens with personalities and needs
-- **Story Campaign** - Narrative-driven goals and milestones
-- **Seasons/Time Cycles** - Weather effects and seasonal events
-- **Night/Day Cycle** - Visual time progression
-
-### Technical Improvements
-- **Backend Integration** - Server-side game state (Express API ready)
-- **Cloud Saves** - Save progress to cloud
-- **Multiplayer** - Competitive or cooperative modes
-- **Mobile App** - Native iOS/Android version
-- **Accessibility** - Better keyboard navigation, screen reader support
-- **Performance** - Optimize for larger city sizes
-
----
+- **Efficiency Upgrade** – +10% income per level, repeatable, cost grows with each level
+- **Solar Technology** – +5 energy per turn
+- **Recycling System** – +$10 income per turn
+- **Automation Tech** – placeholder, no effect yet
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 19 + TypeScript
-- **Build Tool**: Vite
-- **State Management**: Zustand (with persistence)
-- **Styling**: Tailwind CSS
-- **Charts**: Chart.js + react-chartjs-2
-- **Audio**: Tone.js
-- **Icons**: Lucide React
-- **Backend**: Express.js (Node.js)
-
----
-
-## 🎮 How to Play
-
-1. **Manage Resources** - Keep an eye on Population, Energy, and Budget
-2. **Construct Buildings** - Use the sidebar to build structures that generate income/energy
-3. **Research Upgrades** - Upgrade technology to improve efficiency
-4. **Skip Turns** - Trigger income generation and random events
-5. **Stay Alive** - Avoid having BOTH energy and budget reach zero simultaneously
-
----
+- React 19 + TypeScript
+- Vite
+- Zustand (state, with persistence of the high score)
+- Tailwind CSS 3 (via PostCSS)
+- Chart.js + react-chartjs-2
+- Tone.js (ambient music and sound effects)
+- Framer Motion, Lucide React
+- Express (small `server/index.ts` status endpoint, not used by the game yet)
 
 ## 🚀 Getting Started
 
-### Development
 ```bash
 npm install
-npm run dev
+npm run dev       # development server on http://localhost:5173
+npm run build     # type-check and production build
+npm run preview   # preview the production build
+npm run lint      # ESLint
 ```
 
-### Build
-```bash
-npm run build
-npm run preview
-```
+Audio only starts after your first click or key press (browser autoplay policy).
 
-### Backend Server
-```bash
-npm run server
-# API runs on http://localhost:3000
-```
+### Dev cheats
 
----
+In development mode only, press `Ctrl + Shift + C` to open a cheat panel (+$500, +50 energy, +250 population, reset).
 
-## 📝 Project Structure
+## 📁 Project Structure
 
 ```
 src/
-├── components/          # React UI components
-│   ├── Dashboard.tsx   # Main stats and charts
-│   ├── BuildingsPanel.tsx
-│   ├── UpgradesPanel.tsx
-│   ├── PolicyPanel.tsx # Action buttons
-│   ├── EventFeed.tsx   # Event log
-│   └── GameOver.tsx    # Game over screen
-├── hooks/              # Custom React hooks
-│   └── useAmbients.ts  # Audio system
-├── store/              # State management
-│   └── cityStore.ts    # Zustand store
-├── utils/              # Utility functions
-│   └── simulator.ts    # Game event simulation
-└── App.tsx             # Main app component
+├── components/
+│   ├── Dashboard.tsx      # Stats cards and chart
+│   ├── BuildingsPanel.tsx # Build / demolish
+│   ├── UpgradesPanel.tsx  # Research upgrades
+│   ├── PolicyPanel.tsx    # Invest, Energy, End Turn
+│   ├── EventFeed.tsx      # Event log
+│   └── GameOver.tsx       # Game over screen
+├── hooks/
+│   └── useAmbients.ts     # Music and sound effects
+├── store/
+│   └── cityStore.ts       # Game state and rules (Zustand)
+├── utils/
+│   └── simulator.ts       # Legacy stub
+└── App.tsx
+server/
+└── index.ts               # Minimal Express API
 ```
 
----
+All game rules and balance constants (`MAX_ACTIONS_PER_TURN`, blackout and debt limits, building stats) live in `src/store/cityStore.ts`.
 
-## 📊 Game Statistics
+## 🗺️ Ideas / Roadmap
 
-- **Starting Population**: 1,000
-- **Starting Energy**: 100
-- **Starting Budget**: $500
-- **Max Energy Cap**: 200
-- **Game Over Condition**: Energy = 0 AND Budget = 0
-
----
+- More buildings (hospital, mall, wind turbine, university) — icons already exist in the UI
+- Real effect for Automation Tech
+- Pollution, crime and disaster events
+- Tutorial and pause/settings menu
+- Show the energy cap in the UI (e.g. `120 / 200`)
+- Clean up legacy code (`simulator.ts`) and the unused backend
 
 ## 🎨 Visual Design
 
-Inspired by 80s/90s cyberpunk aesthetics with:
-- Neon pink (#c42b9a) and cyan (#14fff7) color scheme
-- Scanline effects and grid backgrounds
-- Animated glow effects and particle systems
-- Monospace typography (Share Tech Mono, Orbitron)
-
----
-
-## 📄 License
-
-This project is open source and available under the MIT License.
-
----
-
-**Last Updated**: November 2025
+80s/90s cyberpunk look: neon pink (`#c42b9a`) and cyan (`#14fff7`), scanlines, glow effects, Orbitron and Share Tech Mono fonts.

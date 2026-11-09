@@ -11,6 +11,8 @@ export interface Building {
   incomePerTurn: number;
   energyPerTurn: number;
   happinessBonus: number;
+  pollutionPerTurn: number;
+  healthPerTurn: number;
   owned: number;
   maxOwned?: number;
 }
@@ -55,8 +57,16 @@ const BASE_POPULATION_CAPACITY = 1000;
 export const MAX_ACTIONS_PER_TURN = 3;
 export const INVEST_COST = 50;
 export const ENERGY_CONVERT_COST = 20;
-const BLACKOUT_LIMIT = 3;
-const DEBT_LIMIT = -200;
+export const BASE_INCOME_PER_TURN = 25;
+export const BASE_ENERGY_PER_TURN = 5;
+export const HISTORY_LENGTH = 30;
+export const AUTO_TURN_SECONDS = 8;
+export const POLLUTION_SAFE_LEVEL = 25;
+const POLLUTION_NATURAL_DECAY = 3;
+const POLLUTION_RECYCLING_DECAY = 4;
+const CITIZENS_PER_ENERGY_UNIT = 200; // each 200 citizens use 1 energy / turn
+export const BLACKOUT_LIMIT = 3;
+export const DEBT_LIMIT = -200;
 const EFFICIENCY_BONUS_PER_LEVEL = 0.1;
 
 export const getEfficiencyMultiplier = (level: number) =>
@@ -73,12 +83,22 @@ export const getPopulationCapacity = (buildings: Building[]) =>
   BASE_POPULATION_CAPACITY +
   buildings.reduce((sum, b) => sum + b.populationBonus * b.owned, 0);
 
+export interface TurnSnapshot {
+  turn: number;
+  population: number;
+  energy: number;
+  budget: number;
+  happiness: number;
+}
+
 export interface CityState {
   // Core resources
   population: number;
   energy: number;
   budget: number;
   happiness: number;
+  pollution: number; // 0-100, rises with industry
+  health: number; // 0-100, hurt by pollution, healed by hospitals
 
   // Game state
   events: string[];
@@ -88,6 +108,8 @@ export interface CityState {
   highScore: number;
   blackoutTurns: number;
   actionsLeft: number; // build / upgrade / demolish actions left this turn
+  history: TurnSnapshot[]; // one entry per turn, for the chart
+  autoTurn: boolean; // end the turn automatically on a timer
 
   // Buildings
   buildings: Building[];
@@ -113,6 +135,7 @@ export interface CityState {
   buyBuilding: (buildingId: string) => void;
   buyUpgrade: (upgradeId: string) => void;
   demolishBuilding: (buildingId: string) => void;
+  setAutoTurn: (enabled: boolean) => void;
   investBudget: () => void;
   convertEnergy: () => void;
 }
@@ -127,6 +150,8 @@ const initialBuildings: Building[] = [
     incomePerTurn: 5,
     energyPerTurn: -2,
     happinessBonus: 1,
+    pollutionPerTurn: 0,
+    healthPerTurn: 0,
     owned: 0,
     maxOwned: 12,
   },
@@ -139,6 +164,8 @@ const initialBuildings: Building[] = [
     incomePerTurn: -5,
     energyPerTurn: 15,
     happinessBonus: 1,
+    pollutionPerTurn: 0,
+    healthPerTurn: 0,
     owned: 0,
     maxOwned: 10,
   },
@@ -151,6 +178,8 @@ const initialBuildings: Building[] = [
     incomePerTurn: 30,
     energyPerTurn: -10,
     happinessBonus: -2,
+    pollutionPerTurn: 5,
+    healthPerTurn: 0,
     owned: 0,
     maxOwned: 8,
   },
@@ -163,6 +192,8 @@ const initialBuildings: Building[] = [
     incomePerTurn: 10,
     energyPerTurn: -5,
     happinessBonus: 0,
+    pollutionPerTurn: 1,
+    healthPerTurn: 0,
     owned: 0,
     maxOwned: 6,
   },
@@ -175,16 +206,210 @@ const initialBuildings: Building[] = [
     incomePerTurn: -3,
     energyPerTurn: -1,
     happinessBonus: 2,
+    pollutionPerTurn: -2,
+    healthPerTurn: 0,
     owned: 0,
     maxOwned: 8,
   },
+  {
+    id: "hospital",
+    name: "Hospital",
+    description: "Heals citizens every turn. Expensive to run.",
+    cost: 250,
+    energyCost: 15,
+    populationBonus: 10,
+    incomePerTurn: -15,
+    energyPerTurn: -6,
+    happinessBonus: 1,
+    pollutionPerTurn: 0,
+    healthPerTurn: 4,
+    owned: 0,
+    maxOwned: 6,
+  },
+  {
+    id: "recycling_center",
+    name: "Recycling Center",
+    description: "Filters industrial emissions. Costly to run.",
+    cost: 220,
+    energyCost: 10,
+    populationBonus: 0,
+    incomePerTurn: -12,
+    energyPerTurn: -5,
+    happinessBonus: 0,
+    pollutionPerTurn: -5,
+    healthPerTurn: 0,
+    owned: 0,
+    maxOwned: 6,
+  },
 ];
+
+export interface TurnPreview {
+  income: { buildings: number; base: number; recycling: number; total: number };
+  energy: {
+    buildings: number;
+    base: number;
+    citizens: number;
+    solar: number;
+    total: number;
+    next: number;
+  };
+  pollution: {
+    buildings: number;
+    natural: number;
+    recycling: number;
+    total: number;
+    next: number;
+  };
+  health: {
+    care: number;
+    penalty: number;
+    recovery: number;
+    total: number;
+    next: number;
+  };
+  happiness: {
+    income: number;
+    energy: number;
+    buildings: number;
+    pollution: number;
+    health: number;
+    total: number;
+    next: number;
+  };
+  population: { capacity: number; change: number; next: number };
+  budgetNext: number;
+}
+
+type PreviewInput = Pick<
+  CityState,
+  | "population"
+  | "energy"
+  | "budget"
+  | "happiness"
+  | "pollution"
+  | "health"
+  | "buildings"
+  | "upgrades"
+>;
+
+// What the next turn will do, before random events. Used both to resolve the
+// turn and to explain the stats to the player.
+export const getTurnPreview = (state: PreviewInput): TurnPreview => {
+  let buildingsIncome = 0;
+  let buildingsEnergy = 0;
+  let buildingsHappiness = 0;
+  let buildingsPollution = 0;
+  let healthCare = 0;
+
+  state.buildings.forEach((b) => {
+    buildingsIncome += b.incomePerTurn * b.owned;
+    buildingsEnergy += b.energyPerTurn * b.owned;
+    buildingsHappiness += b.happinessBonus * b.owned;
+    buildingsPollution += b.pollutionPerTurn * b.owned;
+    healthCare += b.healthPerTurn * b.owned;
+  });
+
+  const income = {
+    buildings: Math.floor(
+      buildingsIncome * getEfficiencyMultiplier(state.upgrades.efficiency),
+    ),
+    base: BASE_INCOME_PER_TURN,
+    recycling: state.upgrades.recycling ? 10 : 0,
+    total: 0,
+  };
+  income.total = income.buildings + income.base + income.recycling;
+
+  const energy = {
+    buildings: buildingsEnergy,
+    base: BASE_ENERGY_PER_TURN,
+    // Citizens consume energy: the bigger the district, the more it needs
+    citizens: -Math.floor(state.population / CITIZENS_PER_ENERGY_UNIT),
+    solar: state.upgrades.solar ? 5 : 0,
+    total: 0,
+    next: 0,
+  };
+  energy.total =
+    energy.buildings + energy.base + energy.citizens + energy.solar;
+  energy.next = Math.max(0, Math.min(200, state.energy + energy.total));
+
+  // Pollution builds up, then hurts the health of the citizens
+  const pollution = {
+    buildings: buildingsPollution,
+    natural: -POLLUTION_NATURAL_DECAY,
+    recycling: state.upgrades.recycling ? -POLLUTION_RECYCLING_DECAY : 0,
+    total: 0,
+    next: 0,
+  };
+  pollution.total =
+    pollution.buildings + pollution.natural + pollution.recycling;
+  pollution.next = Math.max(0, Math.min(100, state.pollution + pollution.total));
+
+  const health = {
+    care: healthCare,
+    penalty:
+      pollution.next > POLLUTION_SAFE_LEVEL
+        ? -Math.ceil((pollution.next - POLLUTION_SAFE_LEVEL) / 10)
+        : 0,
+    recovery: pollution.next <= POLLUTION_SAFE_LEVEL ? 1 : 0,
+    total: 0,
+    next: 0,
+  };
+  health.total = health.care + health.penalty + health.recovery;
+  health.next = Math.max(0, Math.min(100, state.health + health.total));
+
+  // Population drifts toward capacity (faster when happy); sickness shrinks it
+  const capacity = getPopulationCapacity(state.buildings);
+  const gap = capacity - state.population;
+  const rate = gap >= 0 ? 0.05 + (state.happiness / 100) * 0.15 : 0.1;
+  const populationChange =
+    health.next < 30
+      ? -Math.max(1, Math.floor(state.population * 0.03))
+      : gap === 0
+        ? 0
+        : Math.trunc(gap * rate) || Math.sign(gap);
+
+  const happiness = {
+    income: income.total > 0 ? 2 : -1,
+    energy: energy.total >= 0 ? 1 : -2,
+    buildings: Math.max(-3, Math.min(3, Math.round(buildingsHappiness / 2))),
+    pollution: -Math.floor(pollution.next / 25),
+    health: health.next < 40 ? -2 : 0,
+    total: 0,
+    next: 0,
+  };
+  happiness.total =
+    happiness.income +
+    happiness.energy +
+    happiness.buildings +
+    happiness.pollution +
+    happiness.health;
+  happiness.next = Math.max(
+    0,
+    Math.min(100, state.happiness + happiness.total),
+  );
+
+  return {
+    income,
+    energy,
+    pollution,
+    health,
+    happiness,
+    population: {
+      capacity,
+      change: populationChange,
+      next: state.population + populationChange,
+    },
+    budgetNext: state.budget + income.total,
+  };
+};
 
 const initialState = {
   population: 1000,
   energy: 100,
   budget: 500,
   happiness: 65,
+  pollution: 0,
+  health: 80,
   events: ["System initialized...", "District online..."],
   isGameOver: false,
   turns: 0,
@@ -192,6 +417,10 @@ const initialState = {
   highScore: 0,
   blackoutTurns: 0,
   actionsLeft: MAX_ACTIONS_PER_TURN,
+  history: [
+    { turn: 0, population: 1000, energy: 100, budget: 500, happiness: 65 },
+  ] as TurnSnapshot[],
+  autoTurn: false,
   buildings: initialBuildings,
   upgrades: {
     efficiency: 0,
@@ -244,39 +473,14 @@ export const useCityStore = create<CityState>()(
         const state = get();
         if (state.isGameOver) return;
 
-        let income = 0;
-        let energyChange = 0;
-        let happinessFromBuildings = 0;
-
-        state.buildings.forEach((building) => {
-          income += building.incomePerTurn * building.owned;
-          energyChange += building.energyPerTurn * building.owned;
-          happinessFromBuildings += building.happinessBonus * building.owned;
-        });
-
-        income = Math.floor(
-          income * getEfficiencyMultiplier(state.upgrades.efficiency),
-        );
-        if (state.upgrades.solar) energyChange += 5;
-        if (state.upgrades.recycling) income += 10;
-
-        // Population drifts toward capacity, faster when people are happy
-        const capacity = getPopulationCapacity(state.buildings);
-        const gap = capacity - state.population;
-        const rate = gap >= 0 ? 0.05 + (state.happiness / 100) * 0.15 : 0.1;
-        const populationChange =
-          gap === 0 ? 0 : Math.trunc(gap * rate) || Math.sign(gap);
-
-        const happinessDelta =
-          (income > 0 ? 2 : -1) +
-          (energyChange >= 0 ? 1 : -2) +
-          Math.max(-3, Math.min(3, Math.round(happinessFromBuildings / 2)));
-
-        const newPopulation = state.population + populationChange;
-        const newHappiness = Math.max(
-          0,
-          Math.min(100, state.happiness + happinessDelta),
-        );
+        const preview = getTurnPreview(state);
+        const income = preview.income.total;
+        const energyChange = preview.energy.total;
+        const populationChange = preview.population.change;
+        const newPollution = preview.pollution.next;
+        const newHealth = preview.health.next;
+        const newPopulation = preview.population.next;
+        const newHappiness = preview.happiness.next;
 
         set({
           turns: state.turns + 1,
@@ -285,6 +489,8 @@ export const useCityStore = create<CityState>()(
           energy: Math.max(0, Math.min(200, state.energy + energyChange)),
           population: newPopulation,
           happiness: newHappiness,
+          pollution: newPollution,
+          health: newHealth,
           score:
             state.score +
             Math.max(0, income) +
@@ -293,16 +499,28 @@ export const useCityStore = create<CityState>()(
         });
 
         get().addEvent(
-          `Turn ${state.turns + 1}: Income $${income}, Energy ${energyChange > 0 ? "+" : ""}${energyChange}, Pop ${populationChange >= 0 ? "+" : ""}${populationChange}`,
+          `Turn ${state.turns + 1}: Income $${income}, Energy ${energyChange > 0 ? "+" : ""}${energyChange}, Pop ${populationChange >= 0 ? "+" : ""}${populationChange}, Pollution ${newPollution}%, Health ${newHealth}%`,
         );
 
-        if (Math.random() < 0.3) {
+        if (Math.random() < 0.3 + Math.min(0.2, state.turns * 0.005)) {
           const events = [
             { text: "🌟 Tech breakthrough! +50 energy", effect: () => get().addEnergy(50) },
             { text: "💰 Tax revenue! +$100", effect: () => get().addBudget(100) },
             { text: "👥 Immigration wave! +100 population", effect: () => get().increasePopulation(100) },
             { text: "⚡ Power surge! -30 energy", effect: () => get().spendEnergy(30) },
             { text: "💸 Market crash! -$50", effect: () => get().spendBudget(50) },
+            { text: "🔥 Heatwave! -20 energy", effect: () => get().spendEnergy(20) },
+            { text: "✊ Workers' strike! -$80", effect: () => get().spendBudget(80) },
+            {
+              text: "🤒 Epidemic outbreak! -15 health",
+              effect: () =>
+                set((st) => ({ health: Math.max(0, st.health - 15) })),
+            },
+            {
+              text: "😠 Protests in the streets! -8 happiness",
+              effect: () =>
+                set((st) => ({ happiness: Math.max(0, st.happiness - 8) })),
+            },
           ];
 
           const event = events[Math.floor(Math.random() * events.length)];
@@ -314,10 +532,30 @@ export const useCityStore = create<CityState>()(
         const blackoutTurns = get().energy <= 0 ? state.blackoutTurns + 1 : 0;
         set({ blackoutTurns });
 
+        const after = get();
+        set({
+          history: [
+            ...after.history,
+            {
+              turn: after.turns,
+              population: after.population,
+              energy: after.energy,
+              budget: after.budget,
+              happiness: after.happiness,
+            },
+          ].slice(-HISTORY_LENGTH),
+        });
+
         if (blackoutTurns > 0 && blackoutTurns < BLACKOUT_LIMIT) {
           get().addEvent(
             `⚠️ Blackout ${blackoutTurns}/${BLACKOUT_LIMIT}: restore power or the district collapses!`,
           );
+        }
+        if (get().pollution > 60) {
+          get().addEvent(`☣️ Pollution is critical (${get().pollution}%)`);
+        }
+        if (get().health < 40 && get().health > 0) {
+          get().addEvent(`🏥 Citizens are getting sick (health ${get().health}%)`);
         }
         if (get().budget < 0 && get().budget >= DEBT_LIMIT) {
           get().addEvent(`⚠️ District in debt: $${get().budget}`);
@@ -393,6 +631,8 @@ export const useCityStore = create<CityState>()(
         let reason: string | null = null;
         if (state.blackoutTurns >= BLACKOUT_LIMIT) {
           reason = "Prolonged blackout";
+        } else if (state.health <= 0) {
+          reason = "Epidemic";
         } else if (state.happiness <= 0) {
           reason = "Citizens revolt";
         } else if (state.budget < DEBT_LIMIT) {
@@ -417,6 +657,8 @@ export const useCityStore = create<CityState>()(
           events: ["System restarted...", "District management initialized..."],
         });
       },
+
+      setAutoTurn: (enabled) => set({ autoTurn: enabled }),
 
       investBudget: () => {
         const state = get();

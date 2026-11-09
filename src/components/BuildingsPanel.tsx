@@ -13,6 +13,7 @@ import {
   Wind,
   GraduationCap,
   Trash2,
+  Recycle,
 } from "lucide-react";
 
 export default function BuildingsPanel() {
@@ -56,6 +57,7 @@ export default function BuildingsPanel() {
       lab: <FlaskConical size={24} />,
       park: <TreePine size={24} />,
       hospital: <Hospital size={24} />,
+      recycling_center: <Recycle size={24} />,
       police: <Shield size={24} />,
       mall: <ShoppingCart size={24} />,
       wind: <Wind size={24} />,
@@ -201,6 +203,29 @@ export default function BuildingsPanel() {
                     {building.happinessBonus}
                   </span>
                 </div>
+                {building.pollutionPerTurn !== 0 && (
+                  <div className="flex items-center gap-1">
+                    <span>☣️</span>
+                    <span
+                      className={
+                        building.pollutionPerTurn > 0
+                          ? "text-[#ff2e63]"
+                          : "text-energy"
+                      }
+                    >
+                      {building.pollutionPerTurn > 0 ? "+" : ""}
+                      {building.pollutionPerTurn}
+                    </span>
+                  </div>
+                )}
+                {building.healthPerTurn !== 0 && (
+                  <div className="flex items-center gap-1">
+                    <span>❤️</span>
+                    <span className="text-energy">
+                      +{building.healthPerTurn}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-2 pt-2 border-t border-energy/20 text-xs text-energy">

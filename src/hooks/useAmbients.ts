@@ -26,7 +26,7 @@ export function useAmbient() {
             sustain: 1,
             release: 8,
           },
-          volume: -30,
+          volume: -14,
         }).toDestination();
 
         const noise = new Tone.NoiseSynth({
@@ -37,7 +37,7 @@ export function useAmbient() {
             sustain: 0.3,
             release: 4,
           },
-          volume: -35,
+          volume: -26,
         }).toDestination();
 
         const reverb = new Tone.Reverb({
@@ -60,7 +60,7 @@ export function useAmbient() {
         synthObjects = [drone, noise, reverb, autoFilter];
 
         autoFilter.start();
-        drone.triggerAttack("C1", "+0.1");
+        drone.triggerAttack("C2", "+0.1");
         noise.triggerAttack("+0.2");
 
         const synth = new Tone.PolySynth(Tone.Synth, {
@@ -71,7 +71,7 @@ export function useAmbient() {
             sustain: 0.3,
             release: 2,
           },
-          volume: -35,
+          volume: -12,
         }).toDestination();
 
         synth.connect(reverb);
@@ -86,7 +86,7 @@ export function useAmbient() {
               notes[noteIndex % notes.length],
               "8n",
               time,
-              0.05,
+              0.5,
             );
             noteIndex += 1;
           }
@@ -94,7 +94,7 @@ export function useAmbient() {
 
         arpPattern.start(0);
         Tone.getTransport().bpm.value = 40;
-        Tone.getDestination().volume.value = -20;
+        Tone.getDestination().volume.value = -6;
         Tone.getTransport().start();
       } catch (error) {
         console.error("Audio initialization failed:", error);
@@ -145,7 +145,7 @@ export function useSoundEffects() {
           sustain: 0.01,
           release: 0.4,
         },
-        volume: -25,
+        volume: -8,
       }).toDestination();
 
       synth.triggerAttackRelease("C2", "32n");
@@ -166,7 +166,7 @@ export function useSoundEffects() {
           sustain: 0.1,
           release: 0.3,
         },
-        volume: -20,
+        volume: -8,
       }).toDestination();
 
       synth.triggerAttackRelease("C5", "16n");
@@ -190,7 +190,7 @@ export function useSoundEffects() {
           decay: 0.1,
           sustain: 0,
         },
-        volume: -25,
+        volume: -14,
       }).toDestination();
 
       synth.triggerAttackRelease("32n");

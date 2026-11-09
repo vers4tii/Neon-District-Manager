@@ -1,5 +1,12 @@
-import { useEffect, useRef } from "react";
-import { useCityStore } from "../store/cityStore";
+import { useEffect, useRef, type ReactNode } from "react";
+import {
+  BLACKOUT_LIMIT,
+  DEBT_LIMIT,
+  POLLUTION_SAFE_LEVEL,
+  getEfficiencyMultiplier,
+  getTurnPreview,
+  useCityStore,
+} from "../store/cityStore";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -12,7 +19,14 @@ import {
   Legend,
   Filler,
 } from "chart.js";
-import { TrendingUp, Zap, DollarSign, Smile } from "lucide-react";
+import {
+  TrendingUp,
+  Zap,
+  DollarSign,
+  Smile,
+  Factory,
+  HeartPulse,
+} from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -25,8 +39,101 @@ ChartJS.register(
   Filler,
 );
 
+type TipLine =
+  | { label: string; value: number; invert?: boolean; plain?: boolean }
+  | { heading: string }
+  | { note: string; warn?: boolean };
+
+const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+
+function StatCard({
+  icon,
+  label,
+  value,
+  colorClass,
+  lines,
+  alignRight = false,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+  colorClass: string;
+  lines: TipLine[];
+  alignRight?: boolean;
+}) {
+  return (
+    // The tooltip lives outside .stat-card, which clips its content (overflow: hidden)
+    <div className="relative group hover:z-30 has-[:focus-visible]:z-30">
+      <div className="stat-card h-full outline-none" tabIndex={0}>
+        <div className={`flex items-center gap-2 mb-2 ${colorClass}`}>
+          {icon}
+          <span className="text-sm font-bold">{label}</span>
+        </div>
+        <div className={`text-3xl font-bold ${colorClass}`}>{value}</div>
+      </div>
+
+      <div
+        role="tooltip"
+        className={`pointer-events-none invisible opacity-0 group-hover:visible group-hover:opacity-100 group-has-[:focus-visible]:visible group-has-[:focus-visible]:opacity-100 transition-opacity absolute top-full mt-2 z-40 w-64 rounded-lg border border-energy bg-bg p-3 text-xs shadow-[0_0_20px_rgba(20,255,247,0.25)] ${alignRight ? "right-0" : "left-0"}`}
+      >
+        {lines.map((line, i) => {
+          if ("heading" in line) {
+            return (
+              <div
+                key={i}
+                className="mt-2 first:mt-0 mb-1 font-bold text-neon uppercase tracking-wide"
+              >
+                {line.heading}
+              </div>
+            );
+          }
+          if ("note" in line) {
+            return (
+              <div
+                key={i}
+                className={`mt-2 leading-snug ${line.warn ? "text-[#ff2e63]" : "text-energy opacity-70"}`}
+              >
+                {line.note}
+              </div>
+            );
+          }
+          const good = line.invert ? line.value < 0 : line.value > 0;
+          const bad = line.invert ? line.value > 0 : line.value < 0;
+          const color = line.plain
+            ? "text-energy"
+            : good
+              ? "text-energy"
+              : bad
+                ? "text-[#ff2e63]"
+                : "text-energy opacity-60";
+          return (
+            <div key={i} className="flex justify-between gap-2 text-energy">
+              <span>{line.label}</span>
+              <span className={`font-bold ${color}`}>
+                {line.plain ? line.value.toLocaleString() : signed(line.value)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const { population, energy, budget, happiness = 0 } = useCityStore();
+  const state = useCityStore();
+  const {
+    population,
+    energy,
+    budget,
+    happiness = 0,
+    pollution,
+    health,
+    history,
+    blackoutTurns,
+    upgrades,
+  } = state;
+  const preview = getTurnPreview(state);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Particle background effect
@@ -103,38 +210,41 @@ export default function Dashboard() {
     return () => cancelAnimationFrame(animationId);
   }, []);
 
+  const lineStyle = {
+    borderWidth: 2,
+    pointRadius: 2,
+    pointHoverRadius: 5,
+    tension: 0.3,
+  };
+
+  // One point per turn. Each resource has its own scale so none is flattened.
   const data = {
-    labels: ["Now"],
+    labels: history.map((h) => `T${h.turn}`),
     datasets: [
       {
-        label: "Population",
-        data: [population],
+        ...lineStyle,
+        label: "Population (left)",
+        data: history.map((h) => h.population),
         borderColor: "#14fff7",
-        backgroundColor: "rgba(20, 255, 247, 0.3)",
-        borderWidth: 3,
-        pointRadius: 6,
-        pointHoverRadius: 8,
+        backgroundColor: "rgba(20, 255, 247, 0.12)",
         fill: true,
+        yAxisID: "y",
       },
       {
-        label: "Energy",
-        data: [energy],
-        borderColor: "#c42b9a",
-        backgroundColor: "rgba(196, 43, 154, 0.3)",
-        borderWidth: 3,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        fill: true,
-      },
-      {
-        label: "Budget",
-        data: [budget],
+        ...lineStyle,
+        label: "Budget $ (right)",
+        data: history.map((h) => h.budget),
         borderColor: "#ff2e63",
-        backgroundColor: "rgba(255, 46, 99, 0.3)",
-        borderWidth: 3,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        fill: true,
+        backgroundColor: "rgba(255, 46, 99, 0.08)",
+        yAxisID: "y1",
+      },
+      {
+        ...lineStyle,
+        label: "Energy (0-200)",
+        data: history.map((h) => h.energy),
+        borderColor: "#c42b9a",
+        borderDash: [5, 4],
+        yAxisID: "y2",
       },
     ],
   };
@@ -166,14 +276,29 @@ export default function Dashboard() {
         },
       },
     },
+    interaction: { mode: "index" as const, intersect: false },
+    animation: false as const,
     scales: {
       y: {
+        position: "left" as const,
         grid: {
           color: "rgba(20, 255, 247, 0.1)",
         },
         ticks: {
           color: "#14fff7",
         },
+      },
+      y1: {
+        position: "right" as const,
+        grid: { drawOnChartArea: false },
+        ticks: {
+          color: "#ff2e63",
+        },
+      },
+      y2: {
+        display: false,
+        min: 0,
+        max: 200,
       },
       x: {
         grid: {
@@ -184,6 +309,14 @@ export default function Dashboard() {
         },
       },
     },
+  };
+
+  // Green when fine, orange then red when the value is dangerous
+  const levelColor = (value: number, higherIsWorse: boolean) => {
+    const danger = higherIsWorse ? value : 100 - value;
+    if (danger >= 60) return "text-[#ff2e63]";
+    if (danger >= 35) return "text-neon";
+    return "text-energy";
   };
 
   const getHappinessColor = () => {
@@ -205,49 +338,174 @@ export default function Dashboard() {
           CITY STATS TERMINAL
         </h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          <div className="stat-card">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="text-energy" size={24} />
-              <span className="text-energy text-sm font-bold">POPULATION</span>
-            </div>
-            <div className="text-3xl font-bold text-energy">
-              {population.toLocaleString()}
-            </div>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+          <StatCard
+            icon={<TrendingUp size={24} />}
+            label="POPULATION"
+            value={population.toLocaleString()}
+            colorClass="text-energy"
+            lines={[
+              { heading: "Capacity" },
+              {
+                label: "Housing capacity",
+                value: preview.population.capacity,
+                plain: true,
+              },
+              { heading: "Next turn" },
+              { label: "Growth", value: preview.population.change },
+              {
+                label: "Population",
+                value: preview.population.next,
+                plain: true,
+              },
+              {
+                note: "Population moves toward the capacity of your buildings, faster when citizens are happy.",
+              },
+              ...(health < 30
+                ? [
+                    {
+                      note: "Sickness is shrinking the district! Build hospitals.",
+                      warn: true,
+                    },
+                  ]
+                : []),
+            ]}
+          />
 
-          <div className="stat-card">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="text-neon" size={24} />
-              <span className="text-neon text-sm font-bold">ENERGY</span>
-            </div>
-            <div className="text-3xl font-bold text-neon">{energy}</div>
-          </div>
+          <StatCard
+            icon={<Zap size={24} />}
+            label="ENERGY"
+            value={energy}
+            colorClass="text-neon"
+            lines={[
+              { heading: "Per turn" },
+              { label: "Buildings", value: preview.energy.buildings },
+              { label: "District base", value: preview.energy.base },
+              { label: "Citizens", value: preview.energy.citizens },
+              ...(upgrades.solar
+                ? [{ label: "Solar Technology", value: preview.energy.solar }]
+                : []),
+              { label: "Net", value: preview.energy.total },
+              { heading: "Next turn" },
+              { label: "Energy (max 200)", value: preview.energy.next, plain: true },
+              {
+                note: `Energy at 0 for ${BLACKOUT_LIMIT} turns in a row ends the game.`,
+              },
+              ...(blackoutTurns > 0
+                ? [
+                    {
+                      note: `Blackout ${blackoutTurns}/${BLACKOUT_LIMIT}!`,
+                      warn: true,
+                    },
+                  ]
+                : []),
+            ]}
+          />
 
-          <div className="stat-card">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="text-[#ff2e63]" size={24} />
-              <span className="text-[#ff2e63] text-sm font-bold">BUDGET</span>
-            </div>
-            <div className="text-3xl font-bold text-[#ff2e63]">
-              ${budget.toLocaleString()}
-            </div>
-          </div>
+          <StatCard
+            alignRight
+            icon={<DollarSign size={24} />}
+            label="BUDGET"
+            value={`$${budget.toLocaleString()}`}
+            colorClass="text-[#ff2e63]"
+            lines={[
+              { heading: "Per turn" },
+              {
+                label: `Buildings (x${getEfficiencyMultiplier(upgrades.efficiency).toFixed(1)})`,
+                value: preview.income.buildings,
+              },
+              { label: "District base", value: preview.income.base },
+              ...(upgrades.recycling
+                ? [{ label: "Recycling System", value: preview.income.recycling }]
+                : []),
+              { label: "Net", value: preview.income.total },
+              { heading: "Next turn" },
+              { label: "Budget", value: preview.budgetNext, plain: true },
+              {
+                note: `Debt is allowed down to -$${Math.abs(DEBT_LIMIT)}, then it is bankruptcy.`,
+              },
+              ...(budget < 0
+                ? [{ note: "The district is in debt!", warn: true }]
+                : []),
+            ]}
+          />
 
-          <div className="stat-card">
-            <div className="flex items-center gap-2 mb-2">
-              <Smile className={getHappinessColor()} size={24} />
-              <span className={`${getHappinessColor()} text-sm font-bold`}>
-                HAPPINESS
-              </span>
-            </div>
-            <div className={`text-3xl font-bold ${getHappinessColor()}`}>
-              {happiness}%
-            </div>
-          </div>
+          <StatCard
+            icon={<Smile size={24} />}
+            label="HAPPINESS"
+            value={`${happiness}%`}
+            colorClass={getHappinessColor()}
+            lines={[
+              { heading: "Per turn" },
+              { label: "Positive income", value: preview.happiness.income },
+              { label: "Energy balance", value: preview.happiness.energy },
+              { label: "Buildings", value: preview.happiness.buildings },
+              { label: "Pollution", value: preview.happiness.pollution },
+              { label: "Poor health", value: preview.happiness.health },
+              { label: "Net", value: preview.happiness.total },
+              { heading: "Next turn" },
+              { label: "Happiness", value: preview.happiness.next, plain: true },
+              { note: "Happiness at 0% triggers a revolt (game over)." },
+            ]}
+          />
+
+          <StatCard
+            icon={<Factory size={24} />}
+            label="POLLUTION"
+            value={`${pollution}%`}
+            colorClass={levelColor(pollution, true)}
+            lines={[
+              { heading: "Per turn" },
+              {
+                label: "Buildings",
+                value: preview.pollution.buildings,
+                invert: true,
+              },
+              {
+                label: "Natural cleanup",
+                value: preview.pollution.natural,
+                invert: true,
+              },
+              ...(upgrades.recycling
+                ? [
+                    {
+                      label: "Recycling System",
+                      value: preview.pollution.recycling,
+                      invert: true,
+                    },
+                  ]
+                : []),
+              { label: "Net", value: preview.pollution.total, invert: true },
+              { heading: "Next turn" },
+              { label: "Pollution", value: preview.pollution.next, plain: true },
+              {
+                note: `Above ${POLLUTION_SAFE_LEVEL}% it damages health and happiness. Parks and Recycling Centers clean it.`,
+              },
+            ]}
+          />
+
+          <StatCard
+            alignRight
+            icon={<HeartPulse size={24} />}
+            label="HEALTH"
+            value={`${health}%`}
+            colorClass={levelColor(health, false)}
+            lines={[
+              { heading: "Per turn" },
+              { label: "Hospitals", value: preview.health.care },
+              { label: "Pollution damage", value: preview.health.penalty },
+              { label: "Natural recovery", value: preview.health.recovery },
+              { label: "Net", value: preview.health.total },
+              { heading: "Next turn" },
+              { label: "Health", value: preview.health.next, plain: true },
+              {
+                note: "Below 40%: -2 happiness per turn. Below 30%: population shrinks. At 0%: epidemic (game over).",
+              },
+            ]}
+          />
         </div>
 
-        <div className="chart-container" style={{ height: "150px" }}>
+        <div className="chart-container" style={{ height: "190px" }}>
           <Line data={data} options={options} />
         </div>
       </div>

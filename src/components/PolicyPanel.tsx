@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
+  AUTO_TURN_SECONDS,
   ENERGY_CONVERT_COST,
   INVEST_COST,
   MAX_ACTIONS_PER_TURN,
   useCityStore,
 } from "../store/cityStore";
 import { useSoundEffects } from "../hooks/useAmbients";
-import { Coins, Zap, Play, Volume2, VolumeX } from "lucide-react";
+import { Coins, Zap, Play, Timer, Volume2, VolumeX } from "lucide-react";
 import * as Tone from "tone";
 
 export default function PolicyPanel({
@@ -20,6 +21,10 @@ export default function PolicyPanel({
     actionsLeft,
     investBudget,
     convertEnergy,
+    turns,
+    isGameOver,
+    autoTurn,
+    setAutoTurn,
     nextTurn,
   } = useCityStore();
   const { playClick, playSuccess, playError } = useSoundEffects();
@@ -48,6 +53,15 @@ export default function PolicyPanel({
       playError();
     }
   };
+
+  // Auto mode: end the turn every few seconds (timer restarts each turn)
+  useEffect(() => {
+    if (!autoTurn || isGameOver) return;
+    const id = window.setTimeout(() => {
+      if (!document.hidden) nextTurn();
+    }, AUTO_TURN_SECONDS * 1000);
+    return () => window.clearTimeout(id);
+  }, [autoTurn, isGameOver, turns, nextTurn]);
 
   const handleNextTurn = () => {
     playClick();
@@ -100,6 +114,21 @@ export default function PolicyPanel({
         >
           <Play size={20} />
           <span>{actionsLeft > 0 ? "SKIP TURN" : "END TURN"}</span>
+        </button>
+        <button
+          className={`btn-neon flex items-center gap-2 relative overflow-hidden ${autoTurn ? "afford-available" : ""}`}
+          onClick={() => setAutoTurn(!autoTurn)}
+          title={`Automatically end the turn every ${AUTO_TURN_SECONDS}s`}
+        >
+          <Timer size={20} />
+          <span>AUTO {autoTurn ? "ON" : "OFF"}</span>
+          {autoTurn && (
+            <span
+              key={turns}
+              className="auto-turn-bar"
+              style={{ animationDuration: `${AUTO_TURN_SECONDS}s` }}
+            />
+          )}
         </button>
       </div>
     );

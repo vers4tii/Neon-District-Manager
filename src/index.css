@@ -316,3 +316,25 @@
     letter-spacing: 0.08em;
   }
 }
+
+.auto-turn-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: #14fff7;
+  transform-origin: left;
+  animation-name: auto-turn-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes auto-turn-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
