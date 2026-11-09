@@ -5,8 +5,12 @@ import BuildingsPanel from "./components/BuildingsPanel";
 import UpgradesPanel from "./components/UpgradesPanel";
 import PolicyPanel from "./components/PolicyPanel";
 import GameOver from "./components/GameOver";
+import HowToPlay from "./components/HowToPlay";
 import { useAmbient } from "./hooks/useAmbients";
+import { CircleHelp } from "lucide-react";
 import { useCityStore } from "./store/cityStore";
+
+const HOW_TO_PLAY_SEEN_KEY = "neon-district-how-to-play-seen";
 
 export default function App() {
   useAmbient();
@@ -17,6 +21,23 @@ export default function App() {
   const addEvent = useCityStore((state) => state.addEvent);
   const resetGame = useCityStore((state) => state.resetGame);
   const [cheatOpen, setCheatOpen] = useState(false);
+  // Shown automatically on the very first visit, then on demand
+  const [helpOpen, setHelpOpen] = useState(() => {
+    try {
+      return !localStorage.getItem(HOW_TO_PLAY_SEEN_KEY);
+    } catch {
+      return false;
+    }
+  });
+
+  const closeHelp = () => {
+    setHelpOpen(false);
+    try {
+      localStorage.setItem(HOW_TO_PLAY_SEEN_KEY, "1");
+    } catch {
+      // storage unavailable: the help simply shows again next time
+    }
+  };
   const [sidebarTab, setSidebarTab] = useState<"buildings" | "upgrades">(
     "buildings",
   );
@@ -51,9 +72,17 @@ export default function App() {
       </div>
 
       <div className="max-w-[1500px] mx-auto relative z-10">
-        <h1 className="holo-title mb-3 md:mb-5 text-center">
-          NEON DISTRICT MANAGER
-        </h1>
+        <div className="relative flex flex-col sm:block mb-3 md:mb-5">
+          <h1 className="holo-title text-center">NEON DISTRICT MANAGER</h1>
+          <button
+            onClick={() => setHelpOpen(true)}
+            className="order-first self-end mb-1 sm:mb-0 sm:order-none sm:self-auto sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 flex items-center gap-2 text-energy border border-energy rounded px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider hover:bg-energy/10"
+            aria-label="How to play"
+          >
+            <CircleHelp size={18} />
+            <span className="hidden md:inline">How to play</span>
+          </button>
+        </div>
 
         {isGameOver ? (
           <GameOver />
@@ -101,6 +130,8 @@ export default function App() {
         <div className="hidden sm:block fixed bottom-16 left-4 w-12 h-12 md:w-16 md:h-16 border-b-2 border-l-2 border-neon opacity-50" />
         <div className="hidden sm:block fixed bottom-16 right-4 w-12 h-12 md:w-16 md:h-16 border-b-2 border-r-2 border-energy opacity-50" />
       </div>
+
+      {helpOpen && <HowToPlay onClose={closeHelp} />}
 
       {import.meta.env.DEV && cheatOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-bg/80 backdrop-blur-sm">
