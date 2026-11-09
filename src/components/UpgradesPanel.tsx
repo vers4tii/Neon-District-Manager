@@ -166,7 +166,7 @@ export default function UpgradesPanel() {
   })).filter((section) => section.items.length > 0);
 
   return (
-    <div className="bg-building p-3 sm:p-4 rounded-lg mb-4 flex flex-col max-h-[65vh] xl:max-h-[42vh] overflow-hidden">
+    <div className="bg-building p-3 sm:p-4 rounded-lg mb-4 xl:mb-0 flex flex-col max-h-[65vh] xl:max-h-none xl:flex-1 xl:min-h-0 overflow-hidden">
       <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
         <h2 className="text-neon text-lg sm:text-xl font-bold">
           RESEARCH UPGRADES
@@ -212,6 +212,7 @@ export default function UpgradesPanel() {
                 return (
                   <HoverCard
                     key={upgrade.id}
+                    placement="side"
                     content={<TipLines lines={getTooltipLines(upgrade)} />}
                   >
                     <div className={`stat-card p-3 cursor-help ${stateClass}`}>

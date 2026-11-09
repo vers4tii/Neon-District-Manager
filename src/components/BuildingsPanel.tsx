@@ -164,7 +164,7 @@ export default function BuildingsPanel() {
   );
 
   return (
-    <div className="bg-building p-3 sm:p-4 rounded-lg mb-4 flex flex-col max-h-[65vh] xl:max-h-[42vh] overflow-hidden">
+    <div className="bg-building p-3 sm:p-4 rounded-lg mb-4 xl:mb-0 flex flex-col max-h-[65vh] xl:max-h-none xl:flex-1 xl:min-h-0 overflow-hidden">
       <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
         <h2 className="text-neon text-lg sm:text-xl font-bold">
           CONSTRUCT BUILDINGS
@@ -197,6 +197,7 @@ export default function BuildingsPanel() {
 
           return (
             <HoverCard
+              placement="side"
               key={building.id}
               content={<TipLines lines={getTooltipLines(building)} />}
             >

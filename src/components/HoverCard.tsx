@@ -92,10 +92,13 @@ export function HoverCard({
   content,
   children,
   className = "",
+  placement = "below",
 }: {
   content: ReactNode;
   children: ReactNode;
   className?: string;
+  // "side": next to the card (left, else right) so it never covers the card
+  placement?: "below" | "side";
 }) {
   const [open, setOpen] = useState(false);
   const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden" });
@@ -130,6 +133,19 @@ export function HoverCard({
       const rect = anchor.getBoundingClientRect();
       const width = Math.min(POPOVER_WIDTH, vw - MARGIN * 2);
       const height = popover.offsetHeight;
+
+      if (placement === "side") {
+        const fitsLeft = rect.left - width - MARGIN >= MARGIN;
+        const fitsRight = rect.right + width + MARGIN <= vw - MARGIN;
+        if (fitsLeft || fitsRight) {
+          setStyle({
+            left: fitsLeft ? rect.left - width - MARGIN : rect.right + MARGIN,
+            top: Math.max(MARGIN, Math.min(rect.top, vh - height - MARGIN)),
+            width,
+          });
+          return;
+        }
+      }
       const left = Math.max(
         MARGIN,
         Math.min(rect.left, vw - width - MARGIN),
@@ -145,7 +161,7 @@ export function HoverCard({
     place();
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, [open]);
+  }, [open, placement]);
 
   useEffect(() => {
     if (!open) return;

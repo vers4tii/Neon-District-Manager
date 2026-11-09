@@ -17,6 +17,9 @@ export default function App() {
   const addEvent = useCityStore((state) => state.addEvent);
   const resetGame = useCityStore((state) => state.resetGame);
   const [cheatOpen, setCheatOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"buildings" | "upgrades">(
+    "buildings",
+  );
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -62,9 +65,29 @@ export default function App() {
                 <EventFeed />
               </div>
 
-              <aside className="w-full xl:sticky xl:top-4 xl:self-start flex flex-col gap-4">
-                <BuildingsPanel />
-                <UpgradesPanel />
+              <aside className="w-full xl:sticky xl:top-4 xl:self-start xl:h-[calc(100vh-8.5rem)] xl:min-h-[34rem] flex flex-col gap-4">
+                {/* On large screens only one panel is shown, using the full height */}
+                <div className="hidden xl:flex gap-2">
+                  {(["buildings", "upgrades"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setSidebarTab(tab)}
+                      className={`flex-1 px-3 py-2 rounded text-sm font-bold uppercase tracking-wider ${sidebarTab === tab ? "bg-neon text-bg" : "text-energy border border-energy"}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <div
+                  className={`flex flex-col xl:flex-1 xl:min-h-0 ${sidebarTab === "buildings" ? "" : "xl:hidden"}`}
+                >
+                  <BuildingsPanel />
+                </div>
+                <div
+                  className={`flex flex-col xl:flex-1 xl:min-h-0 ${sidebarTab === "upgrades" ? "" : "xl:hidden"}`}
+                >
+                  <UpgradesPanel />
+                </div>
               </aside>
             </div>
             <div className="fixed bottom-0 left-0 w-full z-50 bg-building/90 backdrop-blur border-t border-neon shadow-lg flex justify-center pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:py-3 md:py-4">
