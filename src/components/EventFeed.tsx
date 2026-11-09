@@ -13,7 +13,7 @@ export default function EventFeed() {
   }, [events]);
 
   return (
-    <div className="bg-building p-6 rounded-lg mb-6">
+    <div className="bg-building p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
       <div className="flex items-center gap-2 mb-4">
         <Terminal className="text-energy" size={24} />
         <h2 className="text-neon text-xl font-bold">EVENT LOG</h2>

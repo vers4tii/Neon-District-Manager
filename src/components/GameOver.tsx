@@ -1,25 +1,37 @@
 import { useCityStore } from "../store/cityStore";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 
+const REASON_TEXT: Record<string, string> = {
+  "Prolonged blackout": "Energy stayed at zero for too long - infrastructure shutdown.",
+  Epidemic: "Pollution and disease wiped out the district's health.",
+  "Citizens revolt": "Citizens lost all hope and took over the streets.",
+  Bankruptcy: "The district went too deep into debt to keep operating.",
+};
+
 export default function GameOver() {
-  const { population, resetGame } = useCityStore();
+  const { population, turns, score, highScore, gameOverReason, resetGame } =
+    useCityStore();
 
   return (
-    <div className="bg-building p-8 rounded-lg text-center max-w-2xl mx-auto mt-20">
-      <AlertTriangle className="text-[#ff2e63] mx-auto mb-4" size={64} />
-      
-      <h2 className="text-4xl font-bold text-[#ff2e63] mb-4">
+    <div className="bg-building p-5 sm:p-8 rounded-lg text-center max-w-2xl mx-auto mt-8 sm:mt-20">
+      <AlertTriangle className="text-[#ff2e63] mx-auto mb-4" size={56} />
+
+      <h2 className="text-3xl sm:text-4xl font-bold text-[#ff2e63] mb-4">
         SYSTEM FAILURE
       </h2>
-      
-      <div className="text-energy mb-6 text-lg">
-        <p className="mb-4">The district has collapsed due to resource depletion.</p>
-        <p className="text-neon font-bold">Final Population: {population.toLocaleString()}</p>
-      </div>
 
-      <div className="bg-bg p-4 rounded mb-6 text-left text-sm text-energy opacity-70">
-        <p className="mb-2">⚠️ Energy reached zero - Infrastructure shutdown</p>
-        <p>⚠️ Budget depleted - Unable to maintain operations</p>
+      <div className="text-energy mb-6 text-base sm:text-lg">
+        <p className="mb-2 font-bold">{gameOverReason || "The district has collapsed."}</p>
+        <p className="mb-4 text-sm opacity-80">
+          {REASON_TEXT[gameOverReason] ?? ""}
+        </p>
+        <p className="text-neon font-bold">
+          Final Population: {population.toLocaleString()}
+        </p>
+        <p className="text-sm mt-1">
+          Survived {turns} turns · Score {score.toLocaleString()} · Best{" "}
+          {highScore.toLocaleString()}
+        </p>
       </div>
 
       <button

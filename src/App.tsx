@@ -38,7 +38,7 @@ export default function App() {
   }, [cheatOpen]);
 
   return (
-    <div className="min-h-screen p-3 md:p-4 pb-28 relative overflow-hidden">
+    <div className="min-h-screen p-3 md:p-4 pb-44 sm:pb-28 relative overflow-hidden">
       {/* Background scanline effect */}
       <div className="fixed inset-0 pointer-events-none opacity-10">
         <div
@@ -48,7 +48,7 @@ export default function App() {
       </div>
 
       <div className="max-w-[1500px] mx-auto relative z-10">
-        <h1 className="holo-title mb-4 md:mb-5 text-center">
+        <h1 className="holo-title mb-3 md:mb-5 text-center">
           NEON DISTRICT MANAGER
         </h1>
 
@@ -67,16 +67,16 @@ export default function App() {
                 <UpgradesPanel />
               </aside>
             </div>
-            <div className="fixed bottom-0 left-0 w-full z-50 bg-building/90 backdrop-blur border-t border-neon shadow-lg flex justify-center py-3 md:py-4">
+            <div className="fixed bottom-0 left-0 w-full z-50 bg-building/90 backdrop-blur border-t border-neon shadow-lg flex justify-center pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:py-3 md:py-4">
               <PolicyPanel compact />
             </div>
           </>
         )}
 
-        <div className="fixed top-4 left-4 w-12 h-12 md:w-16 md:h-16 border-t-2 border-l-2 border-energy opacity-50" />
-        <div className="fixed top-4 right-4 w-12 h-12 md:w-16 md:h-16 border-t-2 border-r-2 border-neon opacity-50" />
-        <div className="fixed bottom-16 left-4 w-12 h-12 md:w-16 md:h-16 border-b-2 border-l-2 border-neon opacity-50" />
-        <div className="fixed bottom-16 right-4 w-12 h-12 md:w-16 md:h-16 border-b-2 border-r-2 border-energy opacity-50" />
+        <div className="hidden sm:block fixed top-4 left-4 w-12 h-12 md:w-16 md:h-16 border-t-2 border-l-2 border-energy opacity-50" />
+        <div className="hidden sm:block fixed top-4 right-4 w-12 h-12 md:w-16 md:h-16 border-t-2 border-r-2 border-neon opacity-50" />
+        <div className="hidden sm:block fixed bottom-16 left-4 w-12 h-12 md:w-16 md:h-16 border-b-2 border-l-2 border-neon opacity-50" />
+        <div className="hidden sm:block fixed bottom-16 right-4 w-12 h-12 md:w-16 md:h-16 border-b-2 border-r-2 border-energy opacity-50" />
       </div>
 
       {import.meta.env.DEV && cheatOpen && (

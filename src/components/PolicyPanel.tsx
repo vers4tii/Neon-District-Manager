@@ -3,7 +3,7 @@ import {
   AUTO_TURN_SECONDS,
   ENERGY_CONVERT_COST,
   INVEST_COST,
-  MAX_ACTIONS_PER_TURN,
+  getMaxActions,
   useCityStore,
 } from "../store/cityStore";
 import { useSoundEffects } from "../hooks/useAmbients";
@@ -19,6 +19,7 @@ export default function PolicyPanel({
     budget,
     energy,
     actionsLeft,
+    upgrades,
     investBudget,
     convertEnergy,
     turns,
@@ -68,68 +69,82 @@ export default function PolicyPanel({
     nextTurn();
   };
 
+  const maxActions = getMaxActions(upgrades);
+  const actionButton =
+    "btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-4 text-[10px] sm:text-base tracking-normal sm:tracking-[0.12em] disabled:opacity-50 disabled:cursor-not-allowed";
+
   if (compact) {
     return (
-      <div className="flex gap-4 flex-wrap justify-center items-center">
-        <span
-          className={`text-xs font-bold ${actionsLeft > 0 ? "text-energy" : "text-[#ff2e63]"}`}
-          title="Actions left this turn (build, upgrade, demolish, invest, sell energy)"
+      <div className="w-full max-w-3xl px-2">
+        <div
+          className={`text-center text-xs font-bold mb-1.5 sm:mb-0 sm:hidden ${actionsLeft > 0 ? "text-energy" : "text-[#ff2e63]"}`}
         >
-          ACTIONS {actionsLeft}/{MAX_ACTIONS_PER_TURN}
-        </span>
-        <button
-          className="btn-neon flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleInvest}
-          disabled={actionsLeft <= 0 || budget < INVEST_COST}
-          title={
-            actionsLeft <= 0
-              ? "No actions left this turn"
-              : budget < INVEST_COST
-                ? "Insufficient budget"
-                : "Invest $50: +5 happiness (1 action)"
-          }
-        >
-          <Coins size={20} />
-          <span>INVEST</span>
-        </button>
-        <button
-          className="btn-neon flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleUseEnergy}
-          disabled={actionsLeft <= 0 || energy < ENERGY_CONVERT_COST}
-          title={
-            actionsLeft <= 0
-              ? "No actions left this turn"
-              : energy < ENERGY_CONVERT_COST
-                ? "Insufficient energy"
-                : "Sell 20 energy: +$40 (1 action)"
-          }
-        >
-          <Zap size={20} />
-          <span>ENERGY</span>
-        </button>
-        <button
-          className="btn-neon flex items-center gap-2"
-          onClick={handleNextTurn}
-          title="Advance to next turn"
-        >
-          <Play size={20} />
-          <span>{actionsLeft > 0 ? "SKIP TURN" : "END TURN"}</span>
-        </button>
-        <button
-          className={`btn-neon flex items-center gap-2 relative overflow-hidden ${autoTurn ? "afford-available" : ""}`}
-          onClick={() => setAutoTurn(!autoTurn)}
-          title={`Automatically end the turn every ${AUTO_TURN_SECONDS}s`}
-        >
-          <Timer size={20} />
-          <span>AUTO {autoTurn ? "ON" : "OFF"}</span>
-          {autoTurn && (
-            <span
-              key={turns}
-              className="auto-turn-bar"
-              style={{ animationDuration: `${AUTO_TURN_SECONDS}s` }}
-            />
-          )}
-        </button>
+          ACTIONS {actionsLeft}/{maxActions}
+        </div>
+        <div className="grid grid-cols-4 gap-1.5 sm:flex sm:gap-4 sm:flex-wrap sm:justify-center sm:items-center">
+          <span
+            className={`hidden sm:inline text-xs font-bold ${actionsLeft > 0 ? "text-energy" : "text-[#ff2e63]"}`}
+            title="Actions left this turn (build, upgrade, demolish, invest, sell energy)"
+          >
+            ACTIONS {actionsLeft}/{maxActions}
+          </span>
+          <button
+            className={actionButton}
+            onClick={handleInvest}
+            disabled={actionsLeft <= 0 || budget < INVEST_COST}
+            title={
+              actionsLeft <= 0
+                ? "No actions left this turn"
+                : budget < INVEST_COST
+                  ? "Insufficient budget"
+                  : "Invest $50: +5 happiness (1 action)"
+            }
+          >
+            <Coins size={20} />
+            <span>INVEST</span>
+          </button>
+          <button
+            className={actionButton}
+            onClick={handleUseEnergy}
+            disabled={actionsLeft <= 0 || energy < ENERGY_CONVERT_COST}
+            title={
+              actionsLeft <= 0
+                ? "No actions left this turn"
+                : energy < ENERGY_CONVERT_COST
+                  ? "Insufficient energy"
+                  : "Sell 20 energy: +$40 (1 action)"
+            }
+          >
+            <Zap size={20} />
+            <span>ENERGY</span>
+          </button>
+          <button
+            className="btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-4 text-[10px] sm:text-base tracking-normal sm:tracking-[0.12em]"
+            onClick={handleNextTurn}
+            title="Advance to next turn"
+          >
+            <Play size={20} />
+            <span className="sm:hidden">NEXT</span>
+            <span className="hidden sm:inline">
+              {actionsLeft > 0 ? "SKIP TURN" : "END TURN"}
+            </span>
+          </button>
+          <button
+            className={`btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-4 text-[10px] sm:text-base tracking-normal sm:tracking-[0.12em] relative overflow-hidden ${autoTurn ? "afford-available" : ""}`}
+            onClick={() => setAutoTurn(!autoTurn)}
+            title={`Automatically end the turn every ${AUTO_TURN_SECONDS}s`}
+          >
+            <Timer size={20} />
+            <span>AUTO {autoTurn ? "ON" : "OFF"}</span>
+            {autoTurn && (
+              <span
+                key={turns}
+                className="auto-turn-bar"
+                style={{ animationDuration: `${AUTO_TURN_SECONDS}s` }}
+              />
+            )}
+          </button>
+        </div>
       </div>
     );
   }

@@ -17,11 +17,36 @@ export interface Building {
   maxOwned?: number;
 }
 
+export type UpgradeId =
+  | "efficiency"
+  | "solar"
+  | "recycling"
+  | "automation"
+  | "green_tech"
+  | "healthcare"
+  | "smart_grid"
+  | "public_transport"
+  | "education"
+  | "tax_reform";
+
+export type UpgradeCategory = "economy" | "energy" | "environment" | "society";
+
+export const UPGRADE_CATEGORIES: { id: UpgradeCategory; label: string }[] = [
+  { id: "economy", label: "Economy" },
+  { id: "energy", label: "Energy" },
+  { id: "environment", label: "Environment" },
+  { id: "society", label: "Society" },
+];
+
 export interface UpgradeDefinition {
-  id: "efficiency" | "solar" | "recycling" | "automation";
+  id: UpgradeId;
   name: string;
   cost: number;
   description: string;
+  effects: string[]; // concrete effects, shown in the tooltip
+  category: UpgradeCategory;
+  requires?: UpgradeId;
+  maxLevel?: number; // default 1
   repeatable?: boolean;
 }
 
@@ -30,28 +55,92 @@ export const upgradeCatalog: UpgradeDefinition[] = [
     id: "efficiency",
     name: "Efficiency Upgrade",
     cost: 500,
-    description: "Improve district income generation.",
+    category: "economy",
+    description: "Optimize every building of the district.",
+    effects: ["+10% income from buildings per level", "Maximum 5 levels"],
     repeatable: true,
+    maxLevel: 5,
   },
   {
-    id: "solar",
-    name: "Solar Technology",
+    id: "tax_reform",
+    name: "Tax Reform",
     cost: 300,
-    description: "Increase energy output across the district.",
-  },
-  {
-    id: "recycling",
-    name: "Recycling System",
-    cost: 400,
-    description: "Turn waste into supplemental budget income.",
+    category: "economy",
+    description: "Squeeze more money out of the citizens.",
+    effects: ["+15% on your total income", "-1 happiness per turn"],
   },
   {
     id: "automation",
     name: "Automation Tech",
     cost: 600,
-    description: "Streamline district operations and reduce manual strain.",
+    category: "economy",
+    description: "Machines take over the routine work.",
+    effects: ["+1 action per turn (3 becomes 4)"],
+  },
+  {
+    id: "solar",
+    name: "Solar Technology",
+    cost: 300,
+    category: "energy",
+    description: "Better panels for every Solar Farm.",
+    effects: ["+3 energy per turn", "+2 energy per turn for each Solar Farm"],
+  },
+  {
+    id: "smart_grid",
+    name: "Smart Grid",
+    cost: 500,
+    category: "energy",
+    requires: "solar",
+    description: "A smarter network wastes less power.",
+    effects: ["Citizens consume 25% less energy"],
+  },
+  {
+    id: "recycling",
+    name: "Recycling System",
+    cost: 400,
+    category: "environment",
+    description: "Turn waste into money and cleaner air.",
+    effects: ["+$10 income per turn", "-4 pollution per turn"],
+  },
+  {
+    id: "green_tech",
+    name: "Green Tech",
+    cost: 450,
+    category: "environment",
+    requires: "recycling",
+    description: "Cleaner production lines.",
+    effects: ["Polluting buildings emit 40% less pollution"],
+  },
+  {
+    id: "healthcare",
+    name: "Healthcare Program",
+    cost: 400,
+    category: "society",
+    description: "Better equipment and staff in every hospital.",
+    effects: ["Hospitals heal 50% more health"],
+  },
+  {
+    id: "public_transport",
+    name: "Public Transport",
+    cost: 350,
+    category: "society",
+    description: "Citizens move around easily.",
+    effects: ["+1 happiness per turn"],
+  },
+  {
+    id: "education",
+    name: "Education System",
+    cost: 400,
+    category: "society",
+    description: "Attracts new families to the district.",
+    effects: ["Population grows 50% faster toward its capacity"],
   },
 ];
+
+export type UpgradeState = { efficiency: number } & Record<
+  Exclude<UpgradeId, "efficiency">,
+  boolean
+>;
 
 const BASE_POPULATION_CAPACITY = 1000;
 export const MAX_ACTIONS_PER_TURN = 3;
@@ -68,6 +157,11 @@ const CITIZENS_PER_ENERGY_UNIT = 200; // each 200 citizens use 1 energy / turn
 export const BLACKOUT_LIMIT = 3;
 export const DEBT_LIMIT = -200;
 const EFFICIENCY_BONUS_PER_LEVEL = 0.1;
+export const GREEN_TECH_FACTOR = 0.6; // polluting buildings emit 60%
+export const HEALTHCARE_BONUS = 0.5; // hospitals heal +50%
+export const SMART_GRID_FACTOR = 0.75; // citizens use 75% of the energy
+export const EDUCATION_GROWTH = 1.5; // population grows 1.5x faster
+export const TAX_REFORM_RATE = 0.15;
 
 export const getEfficiencyMultiplier = (level: number) =>
   1 + level * EFFICIENCY_BONUS_PER_LEVEL;
@@ -78,6 +172,26 @@ export const getUpgradeCost = (upgradeId: string, efficiencyLevel: number) => {
   }
   return upgradeCatalog.find((item) => item.id === upgradeId)?.cost ?? 0;
 };
+
+export const getUpgradeLevel = (upgrades: UpgradeState, id: UpgradeId) =>
+  id === "efficiency" ? upgrades.efficiency : upgrades[id] ? 1 : 0;
+
+export const isUpgradeMaxed = (
+  upgrades: UpgradeState,
+  def: UpgradeDefinition,
+) => getUpgradeLevel(upgrades, def.id) >= (def.maxLevel ?? 1);
+
+// The upgrade that still has to be bought first, if any
+export const getMissingRequirement = (
+  upgrades: UpgradeState,
+  def: UpgradeDefinition,
+) =>
+  def.requires && !getUpgradeLevel(upgrades, def.requires)
+    ? upgradeCatalog.find((item) => item.id === def.requires)
+    : undefined;
+
+export const getMaxActions = (upgrades: UpgradeState) =>
+  MAX_ACTIONS_PER_TURN + (upgrades.automation ? 1 : 0);
 
 export const getPopulationCapacity = (buildings: Building[]) =>
   BASE_POPULATION_CAPACITY +
@@ -103,6 +217,7 @@ export interface CityState {
   // Game state
   events: string[];
   isGameOver: boolean;
+  gameOverReason: string;
   turns: number;
   score: number;
   highScore: number;
@@ -115,12 +230,7 @@ export interface CityState {
   buildings: Building[];
 
   // Upgrades
-  upgrades: {
-    efficiency: number; // level, 0 = not purchased
-    solar: boolean;
-    recycling: boolean;
-    automation: boolean;
-  };
+  upgrades: UpgradeState; // efficiency is a level (0 = none), the rest are owned or not
 
   // Actions
   increasePopulation: (amount: number) => void;
@@ -144,6 +254,7 @@ const initialBuildings: Building[] = [
   {
     id: "housing",
     name: "Residential Block",
+    description: "Homes for your citizens. Raises the population capacity.",
     cost: 100,
     energyCost: 10,
     populationBonus: 50,
@@ -158,6 +269,7 @@ const initialBuildings: Building[] = [
   {
     id: "solar",
     name: "Solar Farm",
+    description: "Clean power. Your main defense against blackouts.",
     cost: 150,
     energyCost: 0,
     populationBonus: 0,
@@ -172,6 +284,7 @@ const initialBuildings: Building[] = [
   {
     id: "factory",
     name: "Factory",
+    description: "Big income, but pollutes and makes citizens unhappy.",
     cost: 200,
     energyCost: 20,
     populationBonus: 20,
@@ -186,6 +299,7 @@ const initialBuildings: Building[] = [
   {
     id: "lab",
     name: "Research Lab",
+    description: "Steady income with a little pollution.",
     cost: 300,
     energyCost: 15,
     populationBonus: 10,
@@ -200,6 +314,7 @@ const initialBuildings: Building[] = [
   {
     id: "park",
     name: "Neon Park",
+    description: "Makes citizens happy and cleans a bit of the air.",
     cost: 120,
     energyCost: 5,
     populationBonus: 20,
@@ -243,8 +358,29 @@ const initialBuildings: Building[] = [
   },
 ];
 
+// Building stats once your upgrades are applied
+export const getEffectiveBuildingStats = (
+  building: Building,
+  upgrades: UpgradeState,
+) => ({
+  pollution:
+    building.pollutionPerTurn > 0 && upgrades.green_tech
+      ? Math.round(building.pollutionPerTurn * GREEN_TECH_FACTOR)
+      : building.pollutionPerTurn,
+  health: upgrades.healthcare
+    ? building.healthPerTurn +
+      Math.floor(building.healthPerTurn * HEALTHCARE_BONUS)
+    : building.healthPerTurn,
+});
+
 export interface TurnPreview {
-  income: { buildings: number; base: number; recycling: number; total: number };
+  income: {
+    buildings: number;
+    base: number;
+    recycling: number;
+    tax: number;
+    total: number;
+  };
   energy: {
     buildings: number;
     base: number;
@@ -273,6 +409,8 @@ export interface TurnPreview {
     buildings: number;
     pollution: number;
     health: number;
+    transport: number;
+    tax: number;
     total: number;
     next: number;
   };
@@ -298,16 +436,28 @@ export const getTurnPreview = (state: PreviewInput): TurnPreview => {
   let buildingsIncome = 0;
   let buildingsEnergy = 0;
   let buildingsHappiness = 0;
-  let buildingsPollution = 0;
+  let polluting = 0;
+  let cleaning = 0;
   let healthCare = 0;
+  let solarFarms = 0;
 
   state.buildings.forEach((b) => {
     buildingsIncome += b.incomePerTurn * b.owned;
     buildingsEnergy += b.energyPerTurn * b.owned;
     buildingsHappiness += b.happinessBonus * b.owned;
-    buildingsPollution += b.pollutionPerTurn * b.owned;
+    if (b.pollutionPerTurn > 0) polluting += b.pollutionPerTurn * b.owned;
+    else cleaning += b.pollutionPerTurn * b.owned;
     healthCare += b.healthPerTurn * b.owned;
+    if (b.id === "solar") solarFarms = b.owned;
   });
+
+  const buildingsPollution =
+    (state.upgrades.green_tech
+      ? Math.round(polluting * GREEN_TECH_FACTOR)
+      : polluting) + cleaning;
+  if (state.upgrades.healthcare) {
+    healthCare += Math.floor(healthCare * HEALTHCARE_BONUS);
+  }
 
   const income = {
     buildings: Math.floor(
@@ -315,16 +465,24 @@ export const getTurnPreview = (state: PreviewInput): TurnPreview => {
     ),
     base: BASE_INCOME_PER_TURN,
     recycling: state.upgrades.recycling ? 10 : 0,
+    tax: 0,
     total: 0,
   };
-  income.total = income.buildings + income.base + income.recycling;
+  const grossIncome = income.buildings + income.base + income.recycling;
+  income.tax = state.upgrades.tax_reform
+    ? Math.max(0, Math.floor(grossIncome * TAX_REFORM_RATE))
+    : 0;
+  income.total = grossIncome + income.tax;
 
   const energy = {
     buildings: buildingsEnergy,
     base: BASE_ENERGY_PER_TURN,
     // Citizens consume energy: the bigger the district, the more it needs
-    citizens: -Math.floor(state.population / CITIZENS_PER_ENERGY_UNIT),
-    solar: state.upgrades.solar ? 5 : 0,
+    citizens: -Math.floor(
+      (state.population / CITIZENS_PER_ENERGY_UNIT) *
+        (state.upgrades.smart_grid ? SMART_GRID_FACTOR : 1),
+    ),
+    solar: state.upgrades.solar ? 3 + 2 * solarFarms : 0,
     total: 0,
     next: 0,
   };
@@ -360,7 +518,11 @@ export const getTurnPreview = (state: PreviewInput): TurnPreview => {
   // Population drifts toward capacity (faster when happy); sickness shrinks it
   const capacity = getPopulationCapacity(state.buildings);
   const gap = capacity - state.population;
-  const rate = gap >= 0 ? 0.05 + (state.happiness / 100) * 0.15 : 0.1;
+  const rate =
+    gap >= 0
+      ? (0.05 + (state.happiness / 100) * 0.15) *
+        (state.upgrades.education ? EDUCATION_GROWTH : 1)
+      : 0.1;
   const populationChange =
     health.next < 30
       ? -Math.max(1, Math.floor(state.population * 0.03))
@@ -374,6 +536,8 @@ export const getTurnPreview = (state: PreviewInput): TurnPreview => {
     buildings: Math.max(-3, Math.min(3, Math.round(buildingsHappiness / 2))),
     pollution: -Math.floor(pollution.next / 25),
     health: health.next < 40 ? -2 : 0,
+    transport: state.upgrades.public_transport ? 1 : 0,
+    tax: state.upgrades.tax_reform ? -1 : 0,
     total: 0,
     next: 0,
   };
@@ -382,7 +546,9 @@ export const getTurnPreview = (state: PreviewInput): TurnPreview => {
     happiness.energy +
     happiness.buildings +
     happiness.pollution +
-    happiness.health;
+    happiness.health +
+    happiness.transport +
+    happiness.tax;
   happiness.next = Math.max(
     0,
     Math.min(100, state.happiness + happiness.total),
@@ -412,6 +578,7 @@ const initialState = {
   health: 80,
   events: ["System initialized...", "District online..."],
   isGameOver: false,
+  gameOverReason: "",
   turns: 0,
   score: 0,
   highScore: 0,
@@ -427,7 +594,13 @@ const initialState = {
     solar: false,
     recycling: false,
     automation: false,
-  },
+    green_tech: false,
+    healthcare: false,
+    smart_grid: false,
+    public_transport: false,
+    education: false,
+    tax_reform: false,
+  } as UpgradeState,
 };
 
 export const useCityStore = create<CityState>()(
@@ -484,7 +657,7 @@ export const useCityStore = create<CityState>()(
 
         set({
           turns: state.turns + 1,
-          actionsLeft: MAX_ACTIONS_PER_TURN,
+          actionsLeft: getMaxActions(state.upgrades),
           budget: state.budget + income,
           energy: Math.max(0, Math.min(200, state.energy + energyChange)),
           population: newPopulation,
@@ -597,31 +770,24 @@ export const useCityStore = create<CityState>()(
         const upgrade = upgradeCatalog.find((item) => item.id === upgradeId);
 
         if (!upgrade || state.actionsLeft <= 0) return;
+        if (isUpgradeMaxed(state.upgrades, upgrade)) return;
+        if (getMissingRequirement(state.upgrades, upgrade)) return;
 
         const cost = getUpgradeCost(upgradeId, state.upgrades.efficiency);
+        if (state.budget < cost) return;
 
-        if (
-          upgradeId !== "efficiency" &&
-          state.upgrades[upgradeId as keyof typeof state.upgrades]
-        ) {
-          return;
-        }
+        set((state) => ({
+          // Automation grants the extra action it costs, so buying it is free
+          actionsLeft: state.actionsLeft - (upgradeId === "automation" ? 0 : 1),
+          budget: state.budget - cost,
+          upgrades: {
+            ...state.upgrades,
+            [upgradeId]:
+              upgradeId === "efficiency" ? state.upgrades.efficiency + 1 : true,
+          } as UpgradeState,
+        }));
 
-        if (state.budget >= cost) {
-          set((state) => ({
-            actionsLeft: state.actionsLeft - 1,
-            budget: state.budget - cost,
-            upgrades: {
-              ...state.upgrades,
-              [upgradeId]:
-                upgradeId === "efficiency"
-                  ? state.upgrades.efficiency + 1
-                  : true,
-            },
-          }));
-
-          get().addEvent(`Purchased upgrade: ${upgrade.name}`);
-        }
+        get().addEvent(`Purchased upgrade: ${upgrade.name}`);
       },
 
       checkGameOver: () => {
@@ -642,6 +808,7 @@ export const useCityStore = create<CityState>()(
         if (reason) {
           set({
             isGameOver: true,
+            gameOverReason: reason,
             highScore: Math.max(state.score, state.highScore),
           });
           get().addEvent(`⚠️ CRITICAL: ${reason}! System failure!`);

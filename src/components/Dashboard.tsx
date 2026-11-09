@@ -7,6 +7,7 @@ import {
   getTurnPreview,
   useCityStore,
 } from "../store/cityStore";
+import { HoverCard, TipLines, type TipLine } from "./HoverCard";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -39,84 +40,31 @@ ChartJS.register(
   Filler,
 );
 
-type TipLine =
-  | { label: string; value: number; invert?: boolean; plain?: boolean }
-  | { heading: string }
-  | { note: string; warn?: boolean };
-
-const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
-
 function StatCard({
   icon,
   label,
   value,
   colorClass,
   lines,
-  alignRight = false,
 }: {
   icon: ReactNode;
   label: string;
   value: ReactNode;
   colorClass: string;
   lines: TipLine[];
-  alignRight?: boolean;
 }) {
   return (
-    // The tooltip lives outside .stat-card, which clips its content (overflow: hidden)
-    <div className="relative group hover:z-30 has-[:focus-visible]:z-30">
-      <div className="stat-card h-full outline-none" tabIndex={0}>
+    <HoverCard content={<TipLines lines={lines} />} className="h-full">
+      <div className="stat-card h-full cursor-help">
         <div className={`flex items-center gap-2 mb-2 ${colorClass}`}>
           {icon}
-          <span className="text-sm font-bold">{label}</span>
+          <span className="text-xs sm:text-sm font-bold">{label}</span>
         </div>
-        <div className={`text-3xl font-bold ${colorClass}`}>{value}</div>
+        <div className={`text-2xl sm:text-3xl font-bold ${colorClass}`}>
+          {value}
+        </div>
       </div>
-
-      <div
-        role="tooltip"
-        className={`pointer-events-none invisible opacity-0 group-hover:visible group-hover:opacity-100 group-has-[:focus-visible]:visible group-has-[:focus-visible]:opacity-100 transition-opacity absolute top-full mt-2 z-40 w-64 rounded-lg border border-energy bg-bg p-3 text-xs shadow-[0_0_20px_rgba(20,255,247,0.25)] ${alignRight ? "right-0" : "left-0"}`}
-      >
-        {lines.map((line, i) => {
-          if ("heading" in line) {
-            return (
-              <div
-                key={i}
-                className="mt-2 first:mt-0 mb-1 font-bold text-neon uppercase tracking-wide"
-              >
-                {line.heading}
-              </div>
-            );
-          }
-          if ("note" in line) {
-            return (
-              <div
-                key={i}
-                className={`mt-2 leading-snug ${line.warn ? "text-[#ff2e63]" : "text-energy opacity-70"}`}
-              >
-                {line.note}
-              </div>
-            );
-          }
-          const good = line.invert ? line.value < 0 : line.value > 0;
-          const bad = line.invert ? line.value > 0 : line.value < 0;
-          const color = line.plain
-            ? "text-energy"
-            : good
-              ? "text-energy"
-              : bad
-                ? "text-[#ff2e63]"
-                : "text-energy opacity-60";
-          return (
-            <div key={i} className="flex justify-between gap-2 text-energy">
-              <span>{line.label}</span>
-              <span className={`font-bold ${color}`}>
-                {line.plain ? line.value.toLocaleString() : signed(line.value)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    </HoverCard>
   );
 }
 
@@ -403,7 +351,6 @@ export default function Dashboard() {
           />
 
           <StatCard
-            alignRight
             icon={<DollarSign size={24} />}
             label="BUDGET"
             value={`$${budget.toLocaleString()}`}
@@ -417,6 +364,9 @@ export default function Dashboard() {
               { label: "District base", value: preview.income.base },
               ...(upgrades.recycling
                 ? [{ label: "Recycling System", value: preview.income.recycling }]
+                : []),
+              ...(upgrades.tax_reform
+                ? [{ label: "Tax Reform", value: preview.income.tax }]
                 : []),
               { label: "Net", value: preview.income.total },
               { heading: "Next turn" },
@@ -442,6 +392,17 @@ export default function Dashboard() {
               { label: "Buildings", value: preview.happiness.buildings },
               { label: "Pollution", value: preview.happiness.pollution },
               { label: "Poor health", value: preview.happiness.health },
+              ...(upgrades.public_transport
+                ? [
+                    {
+                      label: "Public Transport",
+                      value: preview.happiness.transport,
+                    },
+                  ]
+                : []),
+              ...(upgrades.tax_reform
+                ? [{ label: "Tax Reform", value: preview.happiness.tax }]
+                : []),
               { label: "Net", value: preview.happiness.total },
               { heading: "Next turn" },
               { label: "Happiness", value: preview.happiness.next, plain: true },
@@ -485,7 +446,6 @@ export default function Dashboard() {
           />
 
           <StatCard
-            alignRight
             icon={<HeartPulse size={24} />}
             label="HEALTH"
             value={`${health}%`}
