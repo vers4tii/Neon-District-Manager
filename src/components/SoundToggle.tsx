@@ -28,12 +28,10 @@ export default function SoundToggle() {
       onClick={() => setMuted((value) => !value)}
       aria-pressed={muted}
       aria-label={muted ? "Sound is off. Turn sound on" : "Sound is on. Turn sound off"}
+      title={muted ? "Sound is off" : "Sound is on"}
       className="flex items-center gap-2 text-energy border border-energy rounded px-2.5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-energy/10 min-h-[40px]"
     >
       {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-      <span className="hidden 2xl:inline">
-        {muted ? "Sound off" : "Sound on"}
-      </span>
     </button>
   );
 }

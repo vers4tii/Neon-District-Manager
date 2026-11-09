@@ -74,18 +74,23 @@ export default function App() {
       </div>
 
       <div className="max-w-[1500px] mx-auto relative z-10">
-        <header className="relative flex flex-col sm:block mb-3 md:mb-5">
-          <h1 className="holo-title text-center">NEON DISTRICT MANAGER</h1>
-          <div className="order-first self-end mb-1 sm:mb-0 sm:order-none sm:self-auto sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 flex items-center gap-2">
+        {/* z-40: the Display menu must stay above the sidebar below */}
+        <header className="relative z-40 flex flex-col sm:flex-row sm:items-center sm:gap-3 mb-3 md:mb-5">
+          {/* Same width as the buttons, so the title stays centered */}
+          <div aria-hidden="true" className="hidden sm:block sm:w-[9.5rem] shrink-0" />
+          <h1 className="holo-title text-center sm:flex-1">
+            NEON DISTRICT MANAGER
+          </h1>
+          <div className="order-first self-end mb-1 sm:order-none sm:self-auto sm:mb-0 sm:w-[9.5rem] shrink-0 flex items-center justify-end gap-2">
             <DisplaySettings />
             <SoundToggle />
             <button
               onClick={() => setHelpOpen(true)}
               className="flex items-center gap-2 text-energy border border-energy rounded px-2.5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-energy/10 min-h-[40px]"
               aria-label="How to play"
+              title="How to play"
             >
               <CircleHelp size={18} />
-              <span className="hidden 2xl:inline">How to play</span>
             </button>
           </div>
         </header>

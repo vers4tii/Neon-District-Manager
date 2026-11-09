@@ -66,10 +66,10 @@ export default function DisplaySettings() {
         aria-expanded={open}
         aria-haspopup="true"
         aria-label="Display settings"
+        title="Display settings"
         className="flex items-center gap-2 text-energy border border-energy rounded px-2.5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-energy/10 min-h-[40px]"
       >
         <SlidersHorizontal size={18} />
-        <span className="hidden 2xl:inline">Display</span>
       </button>
 
       {open && (
