@@ -83,7 +83,7 @@ export default function PolicyPanel({
         ? "Insufficient energy"
         : "Sell 20 energy: +$40 (1 action)";
   const actionButton =
-    "btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-3 lg:px-4 text-[11px] sm:text-sm lg:text-base tracking-normal sm:tracking-[0.1em] disabled:opacity-50 disabled:cursor-not-allowed";
+    "btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-3 lg:px-4 text-[0.6875rem] sm:text-sm lg:text-base tracking-normal sm:tracking-[0.1em] disabled:opacity-50 disabled:cursor-not-allowed";
 
   if (compact) {
     return (
@@ -127,7 +127,7 @@ export default function PolicyPanel({
             <span>ENERGY</span>
           </button>
           <button
-            className="btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-3 lg:px-4 text-[11px] sm:text-sm lg:text-base tracking-normal sm:tracking-[0.1em]"
+            className="btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-3 lg:px-4 text-[0.6875rem] sm:text-sm lg:text-base tracking-normal sm:tracking-[0.1em]"
             onClick={handleNextTurn}
             title="Advance to next turn"
             aria-label="End turn"
@@ -139,7 +139,7 @@ export default function PolicyPanel({
             </span>
           </button>
           <button
-            className={`btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-3 lg:px-4 text-[11px] sm:text-sm lg:text-base tracking-normal sm:tracking-[0.1em] relative overflow-hidden ${autoTurn ? "afford-available" : ""}`}
+            className={`btn-neon flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 py-2 sm:px-3 lg:px-4 text-[0.6875rem] sm:text-sm lg:text-base tracking-normal sm:tracking-[0.1em] relative overflow-hidden ${autoTurn ? "afford-available" : ""}`}
             onClick={() => setAutoTurn(!autoTurn)}
             title={`Automatically end the turn every ${AUTO_TURN_SECONDS}s`}
             aria-pressed={autoTurn}

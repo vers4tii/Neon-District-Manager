@@ -121,20 +121,13 @@
   }
 }
 
+/* Calm text glow by default: strong halos and flicker blur the letters */
 .text-neon {
-  animation: neon-flicker 3s ease-in-out infinite;
-  text-shadow:
-    0 0 8px #c42b9a,
-    0 0 12px #c42b9a,
-    0 0 22px #c42b9a,
-    0 0 38px #ff2e63,
-    0 0 60px #ff2e63;
+  text-shadow: 0 0 6px rgba(196, 43, 154, 0.55);
 }
 
 .text-energy {
-  text-shadow:
-    0 0 8px #14fff7,
-    0 0 12px #14fff7;
+  text-shadow: 0 0 4px rgba(20, 255, 247, 0.4);
 }
 
 .bg-building {
@@ -368,4 +361,106 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------- Display settings (see DisplaySettings.tsx) ---------- */
+
+/* Reduce glow: no glowing text, halos, shimmer or scanlines */
+html.reduce-glow *,
+html.reduce-glow *::before,
+html.reduce-glow *::after,
+html.high-contrast *,
+html.high-contrast *::before,
+html.high-contrast *::after {
+  text-shadow: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html.reduce-glow .bg-building::before,
+html.reduce-glow .bg-building::after,
+html.reduce-glow .scanline-overlay,
+html.high-contrast .bg-building::before,
+html.high-contrast .bg-building::after,
+html.high-contrast .scanline-overlay {
+  display: none !important;
+}
+
+html.reduce-glow body {
+  animation: none !important;
+}
+
+/* High contrast: white text on black, solid borders, nothing dimmed.
+   It also turns off every glow, like "Reduce glow". */
+html.high-contrast body {
+  background: #000 !important;
+  color: #ffffff !important;
+  animation: none !important;
+}
+
+html.high-contrast .bg-building,
+html.high-contrast .stat-card {
+  background: #000 !important;
+  border-width: 2px !important;
+  border-color: #ffffff !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.high-contrast .stat-card.afford-available {
+  border-color: #7dff7d !important;
+}
+
+html.high-contrast .stat-card.afford-unavailable {
+  border-color: #ff8a8a !important;
+}
+
+html.high-contrast [role="tooltip"],
+html.high-contrast [role="group"][aria-label="Display settings"] {
+  background: #000 !important;
+  border-width: 2px !important;
+  border-color: #ffffff !important;
+}
+
+html.high-contrast .text-energy,
+html.high-contrast .text-slate-100,
+html.high-contrast .text-slate-300 {
+  color: #ffffff !important;
+}
+
+html.high-contrast .text-neon {
+  color: #ffc4ec !important;
+}
+
+html.high-contrast .text-\[\#ff2e63\] {
+  color: #ff9a9a !important;
+}
+
+html.high-contrast .opacity-70,
+html.high-contrast .opacity-80 {
+  opacity: 1 !important;
+}
+
+html.high-contrast .btn-neon {
+  background: #000 !important;
+  color: #ffffff !important;
+  border-width: 2px !important;
+  border-color: #ffffff !important;
+}
+
+html.high-contrast .btn-neon.afford-available {
+  border-color: #7dff7d !important;
+}
+
+html.high-contrast .btn-neon.afford-unavailable {
+  border-color: #ff8a8a !important;
+}
+
+/* Larger text: Tailwind sizes follow the root size, the body is set in px */
+html.large-text {
+  font-size: 118.75%;
+}
+
+html.large-text body {
+  font-size: 17.8px;
 }

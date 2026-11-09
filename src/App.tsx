@@ -7,6 +7,7 @@ import PolicyPanel from "./components/PolicyPanel";
 import GameOver from "./components/GameOver";
 import HowToPlay from "./components/HowToPlay";
 import SoundToggle from "./components/SoundToggle";
+import DisplaySettings from "./components/DisplaySettings";
 import { useAmbient } from "./hooks/useAmbients";
 import { CircleHelp } from "lucide-react";
 import { useCityStore } from "./store/cityStore";
@@ -65,7 +66,7 @@ export default function App() {
   return (
     <div className="min-h-screen p-3 md:p-4 pb-44 sm:pb-28 relative overflow-hidden">
       {/* Background scanline effect */}
-      <div className="fixed inset-0 pointer-events-none opacity-10">
+      <div className="scanline-overlay fixed inset-0 pointer-events-none opacity-10">
         <div
           className="absolute inset-0 bg-gradient-to-b from-transparent via-energy to-transparent animate-pulse"
           style={{ height: "2px", animation: "scanline 8s linear infinite" }}
@@ -76,6 +77,7 @@ export default function App() {
         <header className="relative flex flex-col sm:block mb-3 md:mb-5">
           <h1 className="holo-title text-center">NEON DISTRICT MANAGER</h1>
           <div className="order-first self-end mb-1 sm:mb-0 sm:order-none sm:self-auto sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 flex items-center gap-2">
+            <DisplaySettings />
             <SoundToggle />
             <button
               onClick={() => setHelpOpen(true)}
@@ -83,7 +85,7 @@ export default function App() {
               aria-label="How to play"
             >
               <CircleHelp size={18} />
-              <span className="hidden md:inline">How to play</span>
+              <span className="hidden 2xl:inline">How to play</span>
             </button>
           </div>
         </header>

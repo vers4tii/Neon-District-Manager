@@ -28,7 +28,7 @@ export function TipLines({ lines }: { lines: TipLine[] }) {
             <div key={i} className="mb-2">
               <div className="text-sm font-bold text-neon">{line.title}</div>
               {line.subtitle && (
-                <div className="text-energy opacity-70">{line.subtitle}</div>
+                <div className="text-slate-300">{line.subtitle}</div>
               )}
             </div>
           );
@@ -47,7 +47,7 @@ export function TipLines({ lines }: { lines: TipLine[] }) {
           return (
             <div
               key={i}
-              className={`mt-2 leading-snug ${line.warn ? "text-[#ff2e63]" : line.plain ? "text-energy" : "text-energy opacity-70"}`}
+              className={`mt-2 leading-snug ${line.warn ? "text-[#ff2e63]" : line.plain ? "text-slate-100" : "text-slate-300"}`}
             >
               {line.note}
             </div>
@@ -72,7 +72,7 @@ export function TipLines({ lines }: { lines: TipLine[] }) {
         }
 
         return (
-          <div key={i} className="flex justify-between gap-2 text-energy">
+          <div key={i} className="flex justify-between gap-2 text-slate-100">
             <span>{line.label}</span>
             <span className={`font-bold text-right ${color}`}>{text}</span>
           </div>
@@ -84,6 +84,14 @@ export function TipLines({ lines }: { lines: TipLine[] }) {
 
 const MARGIN = 8;
 const POPOVER_WIDTH = 288;
+
+// The popover width follows the root font size ("Larger text" setting)
+const popoverWidth = (available: number) =>
+  Math.min(
+    POPOVER_WIDTH *
+      (parseFloat(getComputedStyle(document.documentElement).fontSize) / 16),
+    available - MARGIN * 2,
+  );
 const MOBILE_BREAKPOINT = 640;
 
 // Wraps a card and shows `content` next to it: on hover with a mouse, on tap
@@ -138,7 +146,7 @@ export function HoverCard({
       }
 
       const rect = anchor.getBoundingClientRect();
-      const width = Math.min(POPOVER_WIDTH, vw - MARGIN * 2);
+      const width = popoverWidth(vw);
       const height = popover.offsetHeight;
 
       if (placement === "side") {
@@ -245,7 +253,7 @@ export function HoverCard({
             style={{
               position: "fixed",
               zIndex: 70,
-              width: Math.min(POPOVER_WIDTH, window.innerWidth - MARGIN * 2),
+              width: popoverWidth(window.innerWidth),
               ...style,
             }}
             className="pointer-events-none rounded-lg border border-energy bg-bg p-3 text-xs shadow-[0_0_20px_rgba(20,255,247,0.25)]"

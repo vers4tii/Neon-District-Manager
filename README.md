@@ -107,6 +107,18 @@ The Efficiency Upgrade gets more expensive with each level.
 - **Responsive** – compact action bar and bottom-sheet tooltips on phones.
 - **Audio** – ambient music and sound effects (they start after your first click or key press, as browsers require).
 
+## ♿ Accessibility
+
+The neon look is optional. The **Display** button (top right) has three settings, remembered in your browser:
+
+- **Reduce glow** – no glowing text, flicker, shimmer or scanlines
+- **High contrast** – white text on black, solid borders, nothing dimmed (it also turns off every glow)
+- **Larger text** – about 19% bigger text
+
+They are switched on automatically if your system asks for reduced motion (*Reduce glow*) or more contrast (*High contrast*).
+
+Also: everything works with the keyboard (stat cards show their tooltip on focus, `Esc` closes tooltips and dialogs), the event log and the actions left are announced to screen readers, unavailable things use a dashed border and not just a color, animations stop with the system "reduce motion" setting, and the **Sound** button mutes the music and effects.
+
 ## 🛠️ Tech Stack
 
 - React 19 + TypeScript
@@ -150,12 +162,15 @@ src/
 │   ├── EventFeed.tsx      # Event log
 │   ├── HoverCard.tsx      # Reusable tooltip (hover / tap)
 │   ├── HowToPlay.tsx      # How to play page
+│   ├── DisplaySettings.tsx # Reduce glow / high contrast / larger text
+│   ├── SoundToggle.tsx    # Mute button
 │   └── GameOver.tsx       # Game over screen
 ├── hooks/
 │   └── useAmbients.ts     # Music and sound effects
 ├── store/
 │   └── cityStore.ts       # Game state and all rules (Zustand)
 ├── utils/
+│   ├── displaySettings.ts # Load / save / apply display settings
 │   └── simulator.ts       # Legacy stub
 └── App.tsx
 server/

@@ -18,7 +18,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <h3 className="text-neon font-bold uppercase tracking-wider text-sm mb-2">
         {title}
       </h3>
-      <div className="text-energy text-sm leading-relaxed space-y-2">
+      <div className="text-slate-100 text-sm leading-relaxed space-y-2">
         {children}
       </div>
     </section>
@@ -128,7 +128,7 @@ export default function HowToPlay({ onClose }: { onClose: () => void }) {
               random event may happen. <strong>Auto</strong> ends the turn for
               you every {AUTO_TURN_SECONDS} seconds.
             </p>
-            <p className="opacity-80">
+            <p className="text-slate-300">
               Every turn the district also gets a free ${BASE_INCOME_PER_TURN}{" "}
               and {BASE_ENERGY_PER_TURN} energy.
             </p>
