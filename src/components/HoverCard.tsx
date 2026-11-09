@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -93,18 +94,24 @@ export function HoverCard({
   children,
   className = "",
   placement = "below",
+  focusable = false,
+  label,
 }: {
   content: ReactNode;
   children: ReactNode;
   className?: string;
   // "side": next to the card (left, else right) so it never covers the card
   placement?: "below" | "side";
+  // Make the card itself reachable with the keyboard (for cards with no button)
+  focusable?: boolean;
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden" });
   const anchorRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const pointerType = useRef("mouse");
+  const popoverId = useId();
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -202,6 +209,21 @@ export function HoverCard({
     <div
       ref={anchorRef}
       className={className}
+      tabIndex={focusable ? 0 : undefined}
+      role={focusable ? "group" : undefined}
+      aria-label={focusable ? label : undefined}
+      aria-describedby={focusable && open ? popoverId : undefined}
+      onFocus={(event) => {
+        // Keyboard focus opens the tooltip too (not mouse clicks)
+        if ((event.target as HTMLElement).matches(":focus-visible")) {
+          setOpen(true);
+        }
+      }}
+      onBlur={(event) => {
+        if (!anchorRef.current?.contains(event.relatedTarget as Node | null)) {
+          setOpen(false);
+        }
+      }}
       onPointerDown={(event) => {
         pointerType.current = event.pointerType;
       }}
@@ -218,6 +240,7 @@ export function HoverCard({
         createPortal(
           <div
             ref={popoverRef}
+            id={popoverId}
             role="tooltip"
             style={{
               position: "fixed",

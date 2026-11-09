@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import {
   AUTO_TURN_SECONDS,
   BASE_ENERGY_PER_TURN,
@@ -26,28 +26,69 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function HowToPlay({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    onCloseRef.current = onClose;
   }, [onClose]);
+
+  // Move focus into the dialog, keep it there, and give it back when closing
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const focusable = () =>
+      Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+
+    focusable()[0]?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, []);
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[80] overflow-y-auto bg-bg/95 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="How to play"
+      aria-labelledby="how-to-play-title"
     >
       <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
         <div className="bg-building rounded-lg p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3 mb-4">
-            <h2 className="holo-title !text-3xl sm:!text-4xl">HOW TO PLAY</h2>
+            <h2 id="how-to-play-title" className="holo-title !text-3xl sm:!text-4xl">
+              HOW TO PLAY
+            </h2>
             <button
               onClick={onClose}
-              className="text-energy hover:text-neon p-2 -m-2"
+              className="text-energy hover:text-neon p-3 -m-3"
               aria-label="Close"
             >
               <X size={26} />

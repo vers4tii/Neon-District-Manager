@@ -192,7 +192,7 @@
     box-shadow 0.2s ease,
     opacity 0.2s ease;
   overflow: hidden;
-  color: #0a0d17;
+  color: #ffffff;
 }
 
 .btn-neon.afford-available {
@@ -336,5 +336,36 @@
   }
   to {
     transform: scaleX(1);
+  }
+}
+
+/* ---------- Accessibility ---------- */
+
+/* Brighter pink for text: the base neon pink is too dark for small text */
+.text-neon {
+  color: #ff6bd0;
+}
+
+/* Clear keyboard focus everywhere */
+:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Not only color: unavailable things also get a dashed border */
+.btn-neon.afford-unavailable,
+.stat-card.afford-unavailable {
+  border-style: dashed !important;
+}
+
+/* Respect "reduce motion" system setting */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

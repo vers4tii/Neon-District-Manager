@@ -54,7 +54,12 @@ function StatCard({
   lines: TipLine[];
 }) {
   return (
-    <HoverCard content={<TipLines lines={lines} />} className="h-full">
+    <HoverCard
+      content={<TipLines lines={lines} />}
+      className="h-full"
+      focusable
+      label={label}
+    >
       <div className="stat-card h-full cursor-help">
         <div className={`flex items-center gap-2 mb-2 ${colorClass}`}>
           {icon}
@@ -91,6 +96,8 @@ export default function Dashboard() {
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    // No moving particles for people who asked for less motion
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
@@ -277,6 +284,7 @@ export default function Dashboard() {
     <div className="bg-building p-4 rounded-lg mb-4 relative">
       <canvas
         ref={canvasRef}
+        aria-hidden="true"
         className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-30"
         style={{ zIndex: 0 }}
       />
@@ -466,7 +474,12 @@ export default function Dashboard() {
         </div>
 
         <div className="chart-container" style={{ height: "190px" }}>
-          <Line data={data} options={options} />
+          <Line
+            data={data}
+            options={options}
+            role="img"
+            aria-label={`Line chart of population, budget and energy for each turn. Latest, turn ${history[history.length - 1].turn}: population ${history[history.length - 1].population}, budget ${history[history.length - 1].budget}, energy ${history[history.length - 1].energy}.`}
+          />
         </div>
       </div>
     </div>

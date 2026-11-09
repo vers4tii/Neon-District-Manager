@@ -152,7 +152,8 @@ export default function UpgradesPanel() {
   ) => (
     <button
       onClick={() => setFilter(value)}
-      className={`px-2.5 py-1.5 sm:py-1 rounded text-xs ${filter === value ? "bg-neon text-bg" : "text-energy border border-energy"}`}
+      aria-pressed={filter === value}
+      className={`px-2.5 py-2 sm:py-1 rounded text-xs ${filter === value ? "bg-[#ff6bd0] text-bg" : "text-energy border border-energy"}`}
     >
       {label}
     </button>
@@ -179,7 +180,7 @@ export default function UpgradesPanel() {
         </div>
       </div>
 
-      <p className="sm:hidden text-[11px] text-energy opacity-60 mb-2">
+      <p className="sm:hidden text-xs text-energy opacity-60 mb-2">
         Tap a card for details.
       </p>
 
@@ -192,7 +193,7 @@ export default function UpgradesPanel() {
 
         {sections.map(({ category, items }) => (
           <section key={category.id}>
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-neon mb-2">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-neon mb-2">
               {category.label}
             </h3>
 
@@ -227,7 +228,7 @@ export default function UpgradesPanel() {
                             <h4 className="text-energy font-bold text-sm leading-tight">
                               {upgrade.name}
                             </h4>
-                            <p className="text-[11px] text-energy opacity-70">
+                            <p className="text-xs text-energy opacity-70">
                               {maxLevel > 1
                                 ? `Level ${level} / ${maxLevel}`
                                 : maxed
@@ -240,7 +241,8 @@ export default function UpgradesPanel() {
                         <button
                           onClick={() => handleBuyUpgrade(upgrade)}
                           disabled={!canBuy}
-                          className={`btn-neon flex items-center gap-1 text-[11px] px-3 py-2 sm:px-2.5 sm:py-1 shrink-0 disabled:cursor-not-allowed ${
+                          aria-label={`${maxed ? "Owned" : "Buy"} ${upgrade.name}${maxed ? "" : missing ? `, locked, requires ${missing.name}` : actionsLeft <= 0 ? ", no actions left" : budget < cost ? ", not enough money" : `, $${cost}`}`}
+                          className={`btn-neon flex items-center gap-1 text-xs px-3 py-2 sm:px-2.5 sm:py-1 min-h-[44px] sm:min-h-0 shrink-0 disabled:cursor-not-allowed ${
                             maxed || missing
                               ? "opacity-60"
                               : canBuy
@@ -253,18 +255,18 @@ export default function UpgradesPanel() {
                         </button>
                       </div>
 
-                      <p className="text-[11px] text-energy opacity-80 mb-1.5 leading-snug">
+                      <p className="text-xs text-energy opacity-80 mb-1.5 leading-snug">
                         {upgrade.description}
                       </p>
 
-                      <ul className="text-[11px] text-neon leading-snug space-y-0.5">
+                      <ul className="text-xs text-neon leading-snug space-y-0.5">
                         {upgrade.effects.map((effect) => (
                           <li key={effect}>• {effect}</li>
                         ))}
                       </ul>
 
                       {missing && (
-                        <p className="mt-1.5 text-[11px] text-[#ff2e63]">
+                        <p className="mt-1.5 text-xs text-[#ff2e63]">
                           🔒 Requires {missing.name}
                         </p>
                       )}

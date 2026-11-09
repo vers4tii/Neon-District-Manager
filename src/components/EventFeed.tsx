@@ -19,8 +19,17 @@ export default function EventFeed() {
         <h2 className="text-neon text-xl font-bold">EVENT LOG</h2>
       </div>
 
+      {/* Announces the newest events to screen readers */}
+      <div className="sr-only" role="status" aria-live="polite">
+        {events.slice(-2).join(". ")}
+      </div>
+
       <div
         ref={scrollRef}
+        role="log"
+        aria-live="off"
+        aria-label="Event log"
+        tabIndex={0}
         className="event-terminal p-3 rounded h-28 overflow-y-auto scrollbar-thin scrollbar-thumb-energy scrollbar-track-bg"
       >
         {events.length === 0 ? (

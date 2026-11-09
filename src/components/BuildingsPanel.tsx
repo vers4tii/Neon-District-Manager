@@ -157,7 +157,8 @@ export default function BuildingsPanel() {
   ) => (
     <button
       onClick={() => setFilter(value)}
-      className={`px-3 py-1.5 sm:py-1 rounded text-xs sm:text-sm ${filter === value ? "bg-neon text-bg" : "text-energy border border-energy"}`}
+      aria-pressed={filter === value}
+      className={`px-3 py-2 sm:py-1 rounded text-xs sm:text-sm ${filter === value ? "bg-[#ff6bd0] text-bg" : "text-energy border border-energy"}`}
     >
       {label}
     </button>
@@ -226,14 +227,15 @@ export default function BuildingsPanel() {
                     <button
                       onClick={() => handleBuyBuilding(building.id)}
                       disabled={!canAfford || atMax}
-                      className={`btn-neon text-xs px-3 py-2 sm:px-2 sm:py-1 disabled:cursor-not-allowed ${atMax ? "opacity-60" : canAfford ? "afford-available" : "afford-unavailable disabled:opacity-100"}`}
+                      aria-label={`Build ${building.name}${atMax ? ", maximum reached" : actionsLeft <= 0 ? ", no actions left" : budget < building.cost ? ", not enough money" : energy < building.energyCost ? ", not enough energy" : ""}`}
+                      className={`btn-neon text-xs px-3 py-2 sm:px-2 sm:py-1 min-h-[44px] sm:min-h-0 disabled:cursor-not-allowed ${atMax ? "opacity-60" : canAfford ? "afford-available" : "afford-unavailable disabled:opacity-100"}`}
                     >
                       {atMax ? "MAX" : "BUILD"}
                     </button>
                     {building.owned > 0 && (
                       <button
                         onClick={() => handleDemolish(building.id)}
-                        className="text-[#ff2e63] hover:text-white transition-colors p-2 sm:p-1"
+                        className="text-[#ff2e63] hover:text-white transition-colors p-2 sm:p-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
                         aria-label={`Demolish ${building.name}`}
                       >
                         <Trash2 size={16} />
@@ -244,7 +246,8 @@ export default function BuildingsPanel() {
 
                 <div className="grid grid-cols-2 gap-1 text-xs text-energy">
                   <div className="flex items-center gap-1">
-                    <span>💰</span>
+                    <span aria-hidden="true">💰</span>
+                    <span className="sr-only">Cost</span>
                     <span
                       className={building.cost > budget ? "text-[#ff2e63]" : ""}
                     >
@@ -252,7 +255,8 @@ export default function BuildingsPanel() {
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span>⚡</span>
+                    <span aria-hidden="true">⚡</span>
+                    <span className="sr-only">Energy cost</span>
                     <span
                       className={
                         building.energyCost > energy ? "text-[#ff2e63]" : ""
@@ -262,11 +266,13 @@ export default function BuildingsPanel() {
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span>👥</span>
+                    <span aria-hidden="true">👥</span>
+                    <span className="sr-only">Housing capacity</span>
                     <span>+{building.populationBonus}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span>😊</span>
+                    <span aria-hidden="true">😊</span>
+                    <span className="sr-only">Happiness</span>
                     <span
                       className={
                         building.happinessBonus >= 0
@@ -280,7 +286,8 @@ export default function BuildingsPanel() {
                   </div>
                   {building.pollutionPerTurn !== 0 && (
                     <div className="flex items-center gap-1">
-                      <span>☣️</span>
+                      <span aria-hidden="true">☣️</span>
+                    <span className="sr-only">Pollution</span>
                       <span
                         className={
                           building.pollutionPerTurn > 0
@@ -295,7 +302,8 @@ export default function BuildingsPanel() {
                   )}
                   {building.healthPerTurn !== 0 && (
                     <div className="flex items-center gap-1">
-                      <span>❤️</span>
+                      <span aria-hidden="true">❤️</span>
+                    <span className="sr-only">Health</span>
                       <span className="text-energy">
                         +{building.healthPerTurn}
                       </span>

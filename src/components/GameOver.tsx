@@ -13,7 +13,10 @@ export default function GameOver() {
     useCityStore();
 
   return (
-    <div className="bg-building p-5 sm:p-8 rounded-lg text-center max-w-2xl mx-auto mt-8 sm:mt-20">
+    <div
+      role="alert"
+      className="bg-building p-5 sm:p-8 rounded-lg text-center max-w-2xl mx-auto mt-8 sm:mt-20"
+    >
       <AlertTriangle className="text-[#ff2e63] mx-auto mb-4" size={56} />
 
       <h2 className="text-3xl sm:text-4xl font-bold text-[#ff2e63] mb-4">
@@ -37,6 +40,7 @@ export default function GameOver() {
       <button
         className="btn-neon flex items-center gap-2 mx-auto"
         onClick={resetGame}
+        autoFocus
       >
         <RotateCcw size={20} />
         <span>RESTART SIMULATION</span>

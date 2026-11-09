@@ -6,6 +6,7 @@ import UpgradesPanel from "./components/UpgradesPanel";
 import PolicyPanel from "./components/PolicyPanel";
 import GameOver from "./components/GameOver";
 import HowToPlay from "./components/HowToPlay";
+import SoundToggle from "./components/SoundToggle";
 import { useAmbient } from "./hooks/useAmbients";
 import { CircleHelp } from "lucide-react";
 import { useCityStore } from "./store/cityStore";
@@ -72,18 +73,22 @@ export default function App() {
       </div>
 
       <div className="max-w-[1500px] mx-auto relative z-10">
-        <div className="relative flex flex-col sm:block mb-3 md:mb-5">
+        <header className="relative flex flex-col sm:block mb-3 md:mb-5">
           <h1 className="holo-title text-center">NEON DISTRICT MANAGER</h1>
-          <button
-            onClick={() => setHelpOpen(true)}
-            className="order-first self-end mb-1 sm:mb-0 sm:order-none sm:self-auto sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 flex items-center gap-2 text-energy border border-energy rounded px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider hover:bg-energy/10"
-            aria-label="How to play"
-          >
-            <CircleHelp size={18} />
-            <span className="hidden md:inline">How to play</span>
-          </button>
-        </div>
+          <div className="order-first self-end mb-1 sm:mb-0 sm:order-none sm:self-auto sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 flex items-center gap-2">
+            <SoundToggle />
+            <button
+              onClick={() => setHelpOpen(true)}
+              className="flex items-center gap-2 text-energy border border-energy rounded px-2.5 py-2 text-xs font-bold uppercase tracking-wider hover:bg-energy/10 min-h-[40px]"
+              aria-label="How to play"
+            >
+              <CircleHelp size={18} />
+              <span className="hidden md:inline">How to play</span>
+            </button>
+          </div>
+        </header>
 
+        <main>
         {isGameOver ? (
           <GameOver />
         ) : (
@@ -94,14 +99,18 @@ export default function App() {
                 <EventFeed />
               </div>
 
-              <aside className="w-full xl:sticky xl:top-4 xl:self-start xl:h-[calc(100vh-8.5rem)] xl:min-h-[34rem] flex flex-col gap-4">
+              <aside
+                aria-label="Buildings and upgrades"
+                className="w-full xl:sticky xl:top-4 xl:self-start xl:h-[calc(100vh-8.5rem)] xl:min-h-[34rem] flex flex-col gap-4">
                 {/* On large screens only one panel is shown, using the full height */}
-                <div className="hidden xl:flex gap-2">
+                <div className="hidden xl:flex gap-2" role="tablist" aria-label="Sidebar">
                   {(["buildings", "upgrades"] as const).map((tab) => (
                     <button
                       key={tab}
+                      role="tab"
+                      aria-selected={sidebarTab === tab}
                       onClick={() => setSidebarTab(tab)}
-                      className={`flex-1 px-3 py-2 rounded text-sm font-bold uppercase tracking-wider ${sidebarTab === tab ? "bg-neon text-bg" : "text-energy border border-energy"}`}
+                      className={`flex-1 px-3 py-2 rounded text-sm font-bold uppercase tracking-wider ${sidebarTab === tab ? "bg-[#ff6bd0] text-bg" : "text-energy border border-energy"}`}
                     >
                       {tab}
                     </button>
@@ -124,6 +133,7 @@ export default function App() {
             </div>
           </>
         )}
+        </main>
 
         <div className="hidden sm:block fixed top-4 left-4 w-12 h-12 md:w-16 md:h-16 border-t-2 border-l-2 border-energy opacity-50" />
         <div className="hidden sm:block fixed top-4 right-4 w-12 h-12 md:w-16 md:h-16 border-t-2 border-r-2 border-neon opacity-50" />
